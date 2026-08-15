@@ -124,6 +124,14 @@ CREATE TABLE detection_2022 PARTITION OF detection
     FOR VALUES FROM ('2022-01-01') TO ('2023-01-01');
 -- ... remaining years follow the same pattern
 
+-- Catches rows outside the defined yearly ranges - e.g. a detection whose
+-- night_date crosses a year boundary in local time while acq_ts is still the
+-- prior UTC year (Texas, UTC-6, first hours of January). Without this, that
+-- INSERT fails outright instead of just landing somewhere unpruned by year.
+-- Kept intentionally thin: watch it, backfill a proper yearly partition if
+-- it ever grows.
+CREATE TABLE detection_default PARTITION OF detection DEFAULT;
+
 CREATE INDEX detection_geom_gix  ON detection USING gist (geom);
 CREATE INDEX detection_facility_idx ON detection (facility_id, night_date);
 -- BRIN instead of btree: rows are inserted in increasing date order,
