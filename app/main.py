@@ -1,10 +1,12 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.config import CORS_ORIGINS
 from app.db import pool
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
 @asynccontextmanager
@@ -16,13 +18,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="GasFlareTracker", lifespan=lifespan)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
-    allow_methods=["GET"],
-    allow_headers=["*"],
-)
 
 
 @app.get("/health")
@@ -65,3 +60,8 @@ def get_facilities() -> dict:
 
     # psycopg parse column on it's own
     return result[0]
+
+
+# Start page.
+# html=True serves frontend/index.html for "/".
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

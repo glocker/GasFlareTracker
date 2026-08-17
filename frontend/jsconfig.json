@@ -1,0 +1,18 @@
+{
+  // strictPropertyInitialization is off: custom elements assign fields in
+  // connectedCallback (the lifecycle hook), not the constructor.
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "checkJs": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "noEmit": true,
+    "paths": {
+      "#app/*": ["./js/*"]
+    }
+  },
+  "include": ["js/**/*.js", "js/**/*.d.ts"]
+}

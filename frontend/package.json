@@ -1,0 +1,12 @@
+{
+  "name": "gasflaretracker-frontend",
+  "private": true,
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "maplibre-gl": "^4.7.1",
+    "@types/geojson": "^7946.0.14"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p jsconfig.json"
+  }
+}

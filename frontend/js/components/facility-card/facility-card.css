@@ -1,0 +1,48 @@
+facility-card dialog {
+  position: absolute;
+  top: 10rem;
+  right: 1rem;
+  width: 280px;
+  max-width: calc(100vw - 2rem);
+  margin: 0;
+  border: none;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 1rem 1.25rem;
+  z-index: 1;
+  font-family: system-ui, sans-serif;
+}
+
+facility-card .facility-card__close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  border: none;
+  background: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+facility-card h2 {
+  margin: 0 0.5rem 0.75rem 0;
+  font-size: 1.05rem;
+}
+
+facility-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+}
+
+facility-card dt {
+  color: #6b7280;
+  font-weight: 500;
+}
+
+facility-card dd {
+  margin: 0;
+}

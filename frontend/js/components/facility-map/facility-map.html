@@ -1,0 +1,7 @@
+<!-- MapLibre renders its controls/popups as children of .map-container, which
+     lives inside this shadow root, so its stylesheet has to be loaded here too -
+     a light DOM <link> in <head> can't reach into shadow DOM. This link's URL is
+     absolute (CDN), so it survives being parsed via innerHTML unlike a relative
+     same-origin URL would (see facility-map.js for why). -->
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
+<div class="map-container"></div>
