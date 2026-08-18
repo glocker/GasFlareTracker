@@ -33,18 +33,29 @@ export class FacilityMap extends HTMLElement {
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
     stylesheet.href = STYLESHEET_URL.href;
-    shadow.append(stylesheet, template.content.cloneNode(true));
-    const container = /** @type {HTMLElement} */ (shadow.querySelector(".map-container"));
 
-    this.map = new maplibregl.Map({
-      container,
-      style: MAP_STYLE_URL,
-      center: [-95, 35], // Сentered on the continental US
-      zoom: 3.5,
+    // MapLibre measures the container size synchronously in constructor,
+    // before async stylesheet above applied and never remeasures
+    // later, so constructing early permanently freezes the canvas at the
+    // wrong size
+    const stylesheetReady = new Promise((resolve) => {
+      stylesheet.addEventListener("load", resolve, { once: true });
     });
+    shadow.append(stylesheet, template.content.cloneNode(true));
 
-    this.map.addControl(new maplibregl.NavigationControl(), "top-right");
-    this.map.on("load", () => this.loadFacilities());
+    stylesheetReady.then(() => {
+      const container = /** @type {HTMLElement} */ (shadow.querySelector(".map-container"));
+
+      this.map = new maplibregl.Map({
+        container,
+        style: MAP_STYLE_URL,
+        center: [-95, 35], // Сentered on the continental US
+        zoom: 3.5,
+      });
+
+      this.map.addControl(new maplibregl.NavigationControl(), "top-right");
+      this.map.on("load", () => this.loadFacilities());
+    });
   }
 
   async loadFacilities() {

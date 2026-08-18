@@ -7,6 +7,8 @@ export class FacilityCard extends HTMLElement {
 
   connectedCallback() {
     this.dialog = document.createElement("dialog");
+    // Сloses on ESC and on any click outside dialog
+    this.dialog.setAttribute("closedby", "any");
     this.append(this.dialog);
 
     // Render facility card when user click on point on map
@@ -36,7 +38,6 @@ export class FacilityCard extends HTMLElement {
      * @param {string | null | undefined} value - Property value
     */
     const addRow = (name, value) => {
-
       const rowName = document.createElement("dt");
       rowName.textContent = name;
 

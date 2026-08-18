@@ -2,6 +2,10 @@ facility-card dialog {
   position: absolute;
   top: 10rem;
   right: 1rem;
+  /* <dialog>'s UA stylesheet sets left:0 too (not just right:0), for its
+     own centering. Left survives since we only override right, and wins
+     over it once width is fixed too - reset explicitly. */
+  left: auto;
   width: 280px;
   max-width: calc(100vw - 2rem);
   margin: 0;
