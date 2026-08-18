@@ -31,13 +31,16 @@ export class FacilityCard extends HTMLElement {
     title.textContent = props.name;
 
     const list = document.createElement("dl");
-    /** @param {string} label @param {string | null | undefined} value */
-    const addRow = (label, value) => {
-      const term = document.createElement("dt");
-      term.textContent = label;
-      const detail = document.createElement("dd");
-      detail.textContent = value ?? "—";
-      list.append(term, detail);
+    /**
+     * @param {string} name - Property name (Kind, Operator, Status and etc)
+     * @param {string | null | undefined} value - Property value
+    */
+    const addRow = (name, value) => {
+      const name = document.createElement("dt");
+      name.textContent = name;
+      const value = document.createElement("dd");
+      value.textContent = value ?? "—";
+      list.append(name, value);
     };
     addRow("Kind", props.kind);
     addRow("Operator", props.operator);
