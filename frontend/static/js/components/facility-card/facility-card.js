@@ -36,11 +36,14 @@ export class FacilityCard extends HTMLElement {
      * @param {string | null | undefined} value - Property value
     */
     const addRow = (name, value) => {
-      const name = document.createElement("dt");
-      name.textContent = name;
-      const value = document.createElement("dd");
-      value.textContent = value ?? "—";
-      list.append(name, value);
+
+      const rowName = document.createElement("dt");
+      rowName.textContent = name;
+
+      const rowValue = document.createElement("dd");
+      rowValue.textContent = value ?? "—";
+
+      list.append(rowName, rowValue);
     };
     addRow("Kind", props.kind);
     addRow("Operator", props.operator);

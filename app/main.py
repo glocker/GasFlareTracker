@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.db import pool
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "static"
 
 
 @asynccontextmanager

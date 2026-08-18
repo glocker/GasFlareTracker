@@ -11,8 +11,8 @@
     "strictPropertyInitialization": false,
     "noEmit": true,
     "paths": {
-      "#app/*": ["./js/*"]
+      "#app/*": ["./static/js/*"]
     }
   },
-  "include": ["js/**/*.js", "js/**/*.d.ts"]
+  "include": ["static/js/**/*.js", "static/js/**/*.d.ts"]
 }
