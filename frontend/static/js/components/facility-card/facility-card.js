@@ -5,17 +5,30 @@ export class FacilityCard extends HTMLElement {
   /** @type {HTMLDialogElement} */
   dialog;
 
-  connectedCallback() {
+  constructor() {
+    super();
     this.dialog = document.createElement("dialog");
     // Сloses on ESC and on any click outside dialog
     this.dialog.setAttribute("closedby", "any");
     this.append(this.dialog);
-
-    // Render facility card when user click on point on map
-    document.addEventListener("facility-selected", (e) => {
-      this.render(/** @type {CustomEvent<FacilityProperties>} */ (e).detail);
-    });
   }
+
+  connectedCallback() {
+    // Listener on external target needs connect/disconnect pairing
+    document.addEventListener("facility-selected", this._onFacilitySelected);
+  }
+
+  disconnectedCallback() {
+    document.removeEventListener("facility-selected", this._onFacilitySelected);
+  }
+
+  /**
+   * Renders facility card when user clicked on point
+   * @param {Event} e - facility-selected event
+   */
+  _onFacilitySelected = (e) => {
+    this.render(/** @type {CustomEvent<FacilityProperties>} */ (e).detail);
+  };
 
   /** @param {FacilityProperties} props */
   render(props) {
