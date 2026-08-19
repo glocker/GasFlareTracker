@@ -1,7 +1,8 @@
 import argparse
+from datetime import date
 
 from app.db import pool
-from app.etl import detector_bootstrap, eia_facilities, fetch_regions
+from app.etl import detector_bootstrap, eia_facilities, fetch_regions, firms_fetch
 
 
 def main() -> None:
@@ -16,6 +17,11 @@ def main() -> None:
 
     sub.add_parser("bootstrap-detector", help="Insert the initial detector_version row")
 
+    fetch_firms = sub.add_parser("fetch-firms", help="Download FIRMS detections into `detection`")
+    fetch_firms.add_argument("--from", dest="date_from", required=True, type=date.fromisoformat)
+    fetch_firms.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
+    fetch_firms.add_argument("--sources", nargs="+", default=None)
+
     args = parser.parse_args()
 
     # Opened once here, not inside each command: the etl functions can be
@@ -28,6 +34,8 @@ def main() -> None:
             print(f"inserted {fetch_regions.run(args.clusters)} fetch_region rows")
         elif args.command == "bootstrap-detector":
             print(f"inserted detector_version id={detector_bootstrap.run()}")
+        elif args.command == "fetch-firms":
+            print(firms_fetch.run(args.date_from, args.date_to, args.sources))
     finally:
         pool.close()
 
