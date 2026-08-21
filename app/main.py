@@ -33,6 +33,7 @@ def get_facilities(current_date: date | None = None) -> dict:
     query = """
             SELECT json_build_object(
                 'type', 'FeatureCollection',
+                'as_of', %s,
                 'features', COALESCE(
                     json_agg(
                     -- use COALESCE to return empty array if facility_status is empty
@@ -51,12 +52,15 @@ def get_facilities(current_date: date | None = None) -> dict:
                     '[]'::json
                 )
             ) as geojson_collection
-            FROM facility_status_asof(coalesce(%s,
-            (SELECT max(night_date) FROM facility_night)));
+            FROM facility_status_asof(%s);
         """
 
     with pool.connection() as conn:
-        cur = conn.execute(query, [current_date])
+        if current_date is None:
+            # no date given, use latest night we've got
+            current_date = conn.execute("SELECT max(night_date) FROM facility_night").fetchone()[0]
+
+        cur = conn.execute(query, [current_date, current_date])
 
         result = cur.fetchone()
 

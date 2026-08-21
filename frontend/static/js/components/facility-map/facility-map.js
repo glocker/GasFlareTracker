@@ -1,4 +1,5 @@
 import { fetchFacilities } from "#app/api.js";
+import { PeriodFilterControl } from "#app/components/facility-map/period-filter-control.js";
 
 /** @typedef {import("maplibre-gl").Map} MapLibreMap */
 
@@ -28,6 +29,9 @@ export class FacilityMap extends HTMLElement {
   /** @type {MapLibreMap} */
   map;
 
+  /** @type {PeriodFilterControl} */
+  periodFilterControl;
+
   connectedCallback() {
     const shadow = this.attachShadow({ mode: "open" });
     const stylesheet = document.createElement("link");
@@ -54,20 +58,40 @@ export class FacilityMap extends HTMLElement {
       });
 
       this.map.addControl(new maplibregl.NavigationControl(), "top-right");
+      this.periodFilterControl = new PeriodFilterControl((currentDate) =>
+        this.loadFacilities(currentDate)
+      );
+      this.map.addControl(this.periodFilterControl, "top-left");
       this.map.on("load", () => this.loadFacilities());
     });
   }
 
-  async loadFacilities() {
-    /** @type {GeoJSON.FeatureCollection} */
+  /**
+   * Fetches facilities for given date
+   * Also sets map source for first time or updates existing one in place
+   * @param {string | undefined} [currentDate] - selected date filter value
+   */
+  async loadFacilities(currentDate) {
     let geojson;
     try {
-      geojson = await fetchFacilities();
+      geojson = await fetchFacilities(currentDate);
     } catch (err) {
       console.error("failed to load facilities", err);
       return;
     }
 
+    this.periodFilterControl.setValue(geojson.as_of);
+
+    const source = /** @type {import("maplibre-gl").GeoJSONSource | undefined} */ (
+      this.map.getSource("facilities")
+    );
+    if (source) {
+      source.setData(geojson);
+      return;
+    }
+
+    // Add source only once
+    // MapLibre don't allow to add source with existed id twice
     this.map.addSource("facilities", { type: "geojson", data: geojson });
 
     this.map.addLayer({
