@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
+from datetime import date
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -27,7 +28,7 @@ def health() -> dict:
     return {"status": "ok"}
 
 @app.get("/api/facilities")
-def get_facilities() -> dict:
+def get_facilities(current_date: date | None = None) -> dict:
     # Get valid GeoJSON in FeatureCollection
     query = """
             SELECT json_build_object(
@@ -50,11 +51,12 @@ def get_facilities() -> dict:
                     '[]'::json
                 )
             ) as geojson_collection
-            FROM facility_status;
+            FROM facility_status_asof(coalesce(%s,
+            (SELECT max(night_date) FROM facility_night)));
         """
 
     with pool.connection() as conn:
-        cur = conn.execute(query)
+        cur = conn.execute(query, [current_date])
 
         result = cur.fetchone()
 
