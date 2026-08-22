@@ -11,6 +11,14 @@ const STATUS_COLORS = {
   normal: "#16a34a",
 };
 
+const STATUS_LABELS = {
+  no_data: "No data",
+  silent: "Silent",
+  elevated: "Elevated",
+  reduced: "Reduced",
+  normal: "Normal",
+};
+
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
 // A relative href written inside facility-map.html would resolve against the
@@ -46,6 +54,32 @@ export class FacilityMap extends HTMLElement {
       stylesheet.addEventListener("load", resolve, { once: true });
     });
     shadow.append(stylesheet, template.content.cloneNode(true));
+
+    // Legend toggle doesn't depend on MapLibre or the stylesheet load, so it's
+    // wired up right away instead of waiting on stylesheetReady below
+    const legendList = /** @type {HTMLDListElement} */ (shadow.querySelector(".legend-list"));
+    for (const [status, color] of Object.entries(STATUS_COLORS)) {
+      const swatch = document.createElement("dt");
+      swatch.className = "legend-swatch";
+      swatch.style.background = color;
+
+      const label = document.createElement("dd");
+      label.textContent = STATUS_LABELS[/** @type {keyof typeof STATUS_LABELS} */ (status)];
+
+      legendList.append(swatch, label);
+    }
+
+    const legendDialog = /** @type {HTMLDialogElement} */ (shadow.querySelector(".legend-dialog"));
+    // Closes on ESC and on any click outside dialog, same as facility-card
+    legendDialog.setAttribute("closedby", "any");
+    const legendToggle = shadow.querySelector(".legend-toggle");
+    legendToggle?.addEventListener("click", () => {
+      if (legendDialog.open) {
+        legendDialog.close();
+      } else {
+        legendDialog.show();
+      }
+    });
 
     stylesheetReady.then(() => {
       const container = /** @type {HTMLElement} */ (shadow.querySelector(".map-container"));

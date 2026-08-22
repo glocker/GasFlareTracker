@@ -7,3 +7,53 @@
   width: 100%;
   height: 100%;
 }
+
+.legend-toggle {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 1rem;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: none;
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  font: italic 600 1rem/1 serif;
+  cursor: pointer;
+}
+
+.legend-dialog {
+  position: absolute;
+  bottom: 4rem;
+  left: 1rem;
+  /* dialog's UA stylesheet sets right:0 too (not just left:0), for its own
+     centering - we only override left, so right has to be reset explicitly
+     the same way facility-card resets left when it positions from the right */
+  right: auto;
+  top: auto;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  padding: 0.75rem 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.legend-dialog h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.legend-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+}
+
+.legend-swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+}
