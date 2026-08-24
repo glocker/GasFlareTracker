@@ -10,6 +10,12 @@ DEFAULT_PARAMS = {
     "reduced_multiplier": 0.5,
     "baseline_window_days": 365,
     "recent_window_days": 30,
+    # how many days an above/below episode must last before it stops being a
+    # "spike" and becomes a "regime_up"/"regime_down" (see event_detector.py)
+    "event_min_duration_days": 14,
+    # consecutive back-to-normal nights required to close an episode - avoids
+    # one noisy night splitting a single episode into two
+    "event_close_hysteresis_nights": 3,
 }
 
 

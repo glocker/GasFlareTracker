@@ -5,7 +5,7 @@ from statistics import median
 from app.db import pool
 
 # No DB access below - kept pure so state machine (episode grouping,
-# hysteresis, spike vs regime) can be unit tested without live Postgres,
+# delay, spike vs regime) can be unit tested without live Postgres,
 # same idea as night_date() in night_date.py
 
 
@@ -47,7 +47,7 @@ def compute_events(
       lead in before eval_from or earliest nights won't have baseline
     @param params - detector_version.params: spike_multiplier, reduced_multiplier,
       baseline_window_days, recent_window_days, event_min_duration_days,
-      event_close_hysteresis_nights
+      event_close_delay_nights
     @param eval_from - first night to evaluate (inclusive)
     @param eval_to - night to stop at (exclusive)
     """
@@ -57,7 +57,7 @@ def compute_events(
     spike_mult = params["spike_multiplier"]
     reduced_mult = params["reduced_multiplier"]
     min_duration = params["event_min_duration_days"]
-    hysteresis = params["event_close_hysteresis_nights"]
+    delay = params["event_close_delay_nights"]
 
     events: list[EventDraft] = []
     episode: dict | None = None
@@ -140,7 +140,7 @@ def compute_events(
             )
         elif state == "normal":
             episode["normal_streak"] += 1
-            if episode["normal_streak"] >= hysteresis:
+            if episode["normal_streak"] >= delay:
                 finalize(end_date=episode["last_in_state_date"])
         else:
             # direct flip (above -> below or vice versa) with no normal gap
