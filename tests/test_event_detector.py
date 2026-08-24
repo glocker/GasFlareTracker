@@ -3,15 +3,15 @@ from datetime import date, timedelta
 from app.etl.event_detector import NightRecord, compute_events
 
 # Small, hand-verifiable window sizes. recent_window_days=1 means "recent" is
-# just that single night's own frp_sum (no smoothing), which keeps the
-# duration/hysteresis/kind tests below arithmetic-free to trace by hand.
+# just that single night's own frp_sum (no smoothing), which keeps
+# duration/delay/kind tests below arithmetic-free to trace by hand
 PARAMS = {
     "spike_multiplier": 2.0,
     "reduced_multiplier": 0.5,
     "baseline_window_days": 21,
     "recent_window_days": 1,
     "event_min_duration_days": 4,
-    "event_close_hysteresis_nights": 2,
+    "event_close_delay_nights": 2,
 }
 
 HIST_START = date(2020, 1, 1)
@@ -23,7 +23,7 @@ EVAL_TO = date(2020, 2, 10)
 def build_history(
     hist_start: date, hist_end: date, overrides: dict[date, tuple[float, bool | None]]
 ):
-    """Flat baseline of frp_sum=10.0 with specific dates overridden."""
+    """Flat baseline of frp_sum=10.0 with specific dates overridden"""
     nights = []
     d = hist_start
     while d <= hist_end:
@@ -80,12 +80,12 @@ def test_sustained_drop_past_min_duration_is_regime_down():
     assert ev.score == 0.2
 
 
-def test_single_normal_night_does_not_split_the_episode():
-    # above, above, one dip back to normal (< hysteresis=2), above, above, above
+def test_single_normal_night_does_not_split_episode():
+    # above, above, one dip back to normal (< delay=2), above, above, above
     overrides = {
         D: (40.0, None),
         D + timedelta(1): (40.0, None),
-        D + timedelta(2): (10.0, None),  # single-night dip, must not close the episode
+        D + timedelta(2): (10.0, None),  # single night dip, must not close event
         D + timedelta(3): (40.0, None),
         D + timedelta(4): (40.0, None),
         D + timedelta(5): (40.0, None),
@@ -170,19 +170,18 @@ def test_insufficient_baseline_history_does_not_produce_a_false_event():
 
 
 def test_baseline_window_excludes_the_recent_window():
-    # recent_window_days=3 here (unlike the recent_window_days=1 used by every
-    # other test in this file) so the recent window actually spans multiple
-    # nights. If baseline included those same nights (the bug this guards
-    # against - see the /grill-me note in CLAUDE.md, Фича 3), the spike would
-    # drag its own baseline up to ~its own level within days and the ratio
-    # would collapse back toward 1, masking the very spike it should flag.
+    # recent_window_days=3 here (unlike recent_window_days=1 used by every
+    # other test in this file) so recent window actually spans multiple
+    # nights. If baseline included those same nights, then spike would
+    # drag its own baseline up to ~its own level within days and ratio
+    # would collapse back toward 1, masking every spike it should flag
     params = {
         "spike_multiplier": 2.0,
         "reduced_multiplier": 0.5,
         "baseline_window_days": 30,
         "recent_window_days": 3,
         "event_min_duration_days": 4,
-        "event_close_hysteresis_nights": 2,
+        "event_close_delay_nights": 2,
     }
     start = D
     overrides = {

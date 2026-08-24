@@ -22,6 +22,7 @@ def main() -> None:
     fetch_firms.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
     fetch_firms.add_argument("--sources", nargs="+", default=None)
 
+    # Flare event detector
     detect_events = sub.add_parser(
         "detect-events", help="Compare facility_night to baseline, write flare_event rows"
     )
