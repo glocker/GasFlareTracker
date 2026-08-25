@@ -80,7 +80,7 @@ def test_sustained_drop_past_min_duration_is_regime_down():
     assert ev.score == 0.2
 
 
-def test_single_normal_night_does_not_split_episode():
+def test_single_normal_night_does_not_split_segment():
     # above, above, one dip back to normal (< delay=2), above, above, above
     overrides = {
         D: (40.0, None),
@@ -127,7 +127,7 @@ def test_direct_flip_from_above_to_below_closes_and_opens_two_events():
     assert second.peak_frp == 2.0
 
 
-def test_episode_still_active_at_window_end_has_no_end_date():
+def test_segment_still_active_at_window_end_has_no_end_date():
     eval_to = date(2020, 2, 5)
     overrides = {}
     d = D

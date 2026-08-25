@@ -4,7 +4,7 @@ from statistics import median
 
 from app.db import pool
 
-# No DB access below - kept pure so state machine (episode grouping,
+# No DB access below - kept pure so state machine (segment grouping,
 # delay, spike vs regime) can be unit tested without live Postgres,
 # same idea as night_date() in night_date.py
 
@@ -60,18 +60,18 @@ def compute_events(
     delay = params["event_close_delay_nights"]
 
     events: list[EventDraft] = []
-    episode: dict | None = None
+    segment: dict | None = None
 
     def finalize(end_date: date | None) -> None:
-        nonlocal episode
-        assert episode is not None  # only called from inside an active episode
-        start = episode["start_date"]
-        last = episode["last_in_state_date"]
+        nonlocal segment
+        assert segment is not None  # only called from inside an active segment
+        start = segment["start_date"]
+        last = segment["last_in_state_date"]
         duration_days = (last - start).days + 1
         kind = (
             "spike"
             if duration_days < min_duration
-            else ("regime_up" if episode["direction"] == "above" else "regime_down")
+            else ("regime_up" if segment["direction"] == "above" else "regime_down")
         )
         # observable=False means we know we didn't see facility that
         # night, not just "no detection" - quiet night isn't a blind one
@@ -82,19 +82,19 @@ def compute_events(
             if rec is not None and rec.observable is False:
                 blind_nights += 1
             d += timedelta(days=1)
-        baseline = episode["baseline_frp"]
+        baseline = segment["baseline_frp"]
         events.append(
             EventDraft(
                 kind=kind,
                 start_date=start,
                 end_date=end_date,
-                peak_frp=episode["peak_frp"],
+                peak_frp=segment["peak_frp"],
                 baseline_frp=baseline,
-                score=(episode["peak_frp"] / baseline) if baseline else 0.0,
+                score=(segment["peak_frp"] / baseline) if baseline else 0.0,
                 blind_nights=blind_nights,
             )
         )
-        episode = None
+        segment = None
 
     t = eval_from
     while t < eval_to:
@@ -119,9 +119,9 @@ def compute_events(
 
         frp_today = by_date[t].frp_sum if t in by_date else 0.0
 
-        if episode is None:
+        if segment is None:
             if state != "normal":
-                episode = {
+                segment = {
                     "direction": state,
                     "start_date": t,
                     "last_in_state_date": t,
@@ -129,23 +129,23 @@ def compute_events(
                     "baseline_frp": baseline,
                     "normal_streak": 0,
                 }
-        elif state == episode["direction"]:
-            episode["last_in_state_date"] = t
-            episode["normal_streak"] = 0
-            # "peak" for a below-episode is the deepest dip, not max
-            episode["peak_frp"] = (
-                max(episode["peak_frp"], frp_today)
-                if episode["direction"] == "above"
-                else min(episode["peak_frp"], frp_today)
+        elif state == segment["direction"]:
+            segment["last_in_state_date"] = t
+            segment["normal_streak"] = 0
+            # "peak" for a below-segment is the deepest dip, not max
+            segment["peak_frp"] = (
+                max(segment["peak_frp"], frp_today)
+                if segment["direction"] == "above"
+                else min(segment["peak_frp"], frp_today)
             )
         elif state == "normal":
-            episode["normal_streak"] += 1
-            if episode["normal_streak"] >= delay:
-                finalize(end_date=episode["last_in_state_date"])
+            segment["normal_streak"] += 1
+            if segment["normal_streak"] >= delay:
+                finalize(end_date=segment["last_in_state_date"])
         else:
             # direct flip (above -> below or vice versa) with no normal gap
-            finalize(end_date=episode["last_in_state_date"])
-            episode = {
+            finalize(end_date=segment["last_in_state_date"])
+            segment = {
                 "direction": state,
                 "start_date": t,
                 "last_in_state_date": t,
@@ -156,7 +156,7 @@ def compute_events(
 
         t += timedelta(days=1)
 
-    if episode is not None:
+    if segment is not None:
         finalize(end_date=None)
 
     return events
