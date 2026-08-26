@@ -68,6 +68,47 @@ def get_facilities(current_date: date | None = None) -> dict:
     return result[0]
 
 
+@app.get("/api/events")
+def get_events(
+    date_from: date | None = None,
+    date_to: date | None = None,
+    limit: int = 1000,
+) -> dict:
+    # Plain JSON, not GeoJSON - events aren't map geometry, just a feed list.
+    # date_from/date_to/limit are already here even without pagination in the
+    # UI yet, so a full-archive view later won't need new query params.
+    query = """
+            SELECT json_build_object(
+                'events', COALESCE(json_agg(row_to_json(e)), '[]'::json)
+            ) AS events_collection
+            FROM (
+                SELECT fe.id,
+                       fe.facility_id,
+                       f.name AS facility_name,
+                       fe.kind,
+                       fe.start_date,
+                       fe.end_date,
+                       fe.peak_frp,
+                       fe.baseline_frp,
+                       fe.score,
+                       fe.blind_nights
+                  FROM flare_event fe
+                  JOIN facility f ON f.id = fe.facility_id
+                 -- COALESCE against fe.start_date makes a NULL bound a no-op
+                 WHERE fe.start_date >= COALESCE(%s, fe.start_date)
+                   AND fe.start_date <= COALESCE(%s, fe.start_date)
+                 ORDER BY fe.start_date DESC
+                 LIMIT %s
+            ) e;
+        """
+
+    with pool.connection() as conn:
+        cur = conn.execute(query, [date_from, date_to, limit])
+        result = cur.fetchone()
+
+    return result[0]
+
+
 # Start page.
 # html=True serves frontend/index.html for "/".
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
