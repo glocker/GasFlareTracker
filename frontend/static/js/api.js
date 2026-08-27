@@ -1,4 +1,5 @@
 /** @typedef {import("./types.js").FacilityProperties} FacilityProperties */
+/** @typedef {import("./types.js").FlareEvent} FlareEvent */
 /**
  * @typedef {GeoJSON.FeatureCollection<GeoJSON.Point, FacilityProperties> & { as_of: string }} FacilityCollection
  */
@@ -31,4 +32,23 @@ export function fetchFacilities(currentDate) {
   }
 
   return /** @type {Promise<FacilityCollection>} */ (getData(`/api/facilities?${url}`));
+}
+
+/**
+ * GET /api/events -> flare_event rows joined with facility name, newest first.
+ * @param {string | undefined} [dateFrom] - inclusive lower bound on start_date
+ * @param {string | undefined} [dateTo] - inclusive upper bound on start_date
+ * @returns {Promise<{ events: FlareEvent[] }>}
+ */
+export function fetchEvents(dateFrom, dateTo) {
+  const url = new URLSearchParams();
+
+  if (dateFrom) {
+    url.set('date_from', dateFrom);
+  }
+  if (dateTo) {
+    url.set('date_to', dateTo);
+  }
+
+  return /** @type {Promise<{ events: FlareEvent[] }>} */ (getData(`/api/events?${url}`));
 }
