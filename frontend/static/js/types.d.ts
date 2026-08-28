@@ -17,3 +17,9 @@ export interface FlareEvent {
   score: number;
   blind_nights: number;
 }
+
+// facility-selected event detail. `event` is only set when opened from an
+// event-feed card, not from clicking a point directly on the map.
+export interface FacilitySelection extends FacilityProperties {
+  event?: FlareEvent;
+}

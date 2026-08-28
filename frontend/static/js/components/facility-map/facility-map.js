@@ -2,6 +2,8 @@ import { fetchFacilities } from "#app/api.js";
 import { PeriodFilterControl } from "#app/components/facility-map/period-filter-control.js";
 
 /** @typedef {import("maplibre-gl").Map} MapLibreMap */
+/** @typedef {import("#app/types.js").FacilityProperties} FacilityProperties */
+/** @typedef {import("#app/types.js").FlareEvent} FlareEvent */
 
 const STATUS_COLORS = {
   no_data: "#9ca3af",
@@ -40,7 +42,13 @@ export class FacilityMap extends HTMLElement {
   /** @type {PeriodFilterControl} */
   periodFilterControl;
 
+  /** @type {GeoJSON.FeatureCollection<GeoJSON.Point, FacilityProperties>} */
+  geojson;
+
   connectedCallback() {
+    // Listener on external target needs connect/disconnect pairing
+    document.addEventListener("event-selected", this._onEventSelected);
+
     const shadow = this.attachShadow({ mode: "open" });
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
@@ -100,6 +108,32 @@ export class FacilityMap extends HTMLElement {
     });
   }
 
+  disconnectedCallback() {
+    document.removeEventListener("event-selected", this._onEventSelected);
+  }
+
+  /**
+   * Fly to facility behind clicked event feed and opens its
+   * card with this event's details attached
+   * @param {Event} e - event selected event
+   */
+  _onEventSelected = (e) => {
+    const flareEvent = /** @type {CustomEvent<FlareEvent>} */ (e).detail;
+    const feature = this.geojson?.features.find((f) => f.id === flareEvent.facility_id);
+    if (!feature || !this.map) return;
+
+    this.map.flyTo({
+      center: /** @type {[number, number]} */ (feature.geometry.coordinates),
+      zoom: Math.max(this.map.getZoom(), 9),
+    });
+    this.dispatchEvent(
+      new CustomEvent("facility-selected", {
+        detail: { ...feature.properties, event: flareEvent },
+        bubbles: true,
+      })
+    );
+  };
+
   /**
    * Fetches facilities for given date
    * Also sets map source for first time or updates existing one in place
@@ -114,6 +148,7 @@ export class FacilityMap extends HTMLElement {
       return;
     }
 
+    this.geojson = geojson;
     this.periodFilterControl.setValue(geojson.as_of);
 
     const source = /** @type {import("maplibre-gl").GeoJSONSource | undefined} */ (

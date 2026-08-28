@@ -35,6 +35,11 @@ facility-card h2 {
   font-size: 1.05rem;
 }
 
+facility-card h3 {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 0.9rem;
+}
+
 facility-card dl {
   margin: 0;
   display: grid;

@@ -77,6 +77,9 @@ export class EventFeed extends HTMLElement {
   renderCard(event) {
     const item = document.createElement("li");
     item.className = "event-feed__card";
+    item.addEventListener("click", () => {
+      item.dispatchEvent(new CustomEvent("event-selected", { detail: event, bubbles: true }));
+    });
 
     const facility = document.createElement("strong");
     facility.textContent = event.facility_name;

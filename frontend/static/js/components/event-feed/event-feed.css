@@ -73,6 +73,7 @@ event-feed .event-feed__card {
   padding: 0.5rem 0.6rem;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 event-feed .event-feed__kind {

@@ -1,5 +1,26 @@
-// Static facility fields only for now (facility_status has no linked event for now)
-/** @typedef {import("#app/types.js").FacilityProperties} FacilityProperties */
+/** @typedef {import("#app/types.js").FacilitySelection} FacilitySelection */
+
+const EVENT_KIND_LABELS = {
+  spike: "Spike",
+  regime_up: "Regime up",
+  regime_down: "Regime down",
+};
+
+/**
+ * Appends a name/value row to a <dl>
+ * @param {HTMLDListElement} dl - target list to append the row to
+ * @param {string} name - property name (Kind, Operator, Status and etc)
+ * @param {string | null | undefined} value - property value
+ */
+function addRow(dl, name, value) {
+  const rowName = document.createElement("dt");
+  rowName.textContent = name;
+
+  const rowValue = document.createElement("dd");
+  rowValue.textContent = value ?? "—";
+
+  dl.append(rowName, rowValue);
+}
 
 export class FacilityCard extends HTMLElement {
   /** @type {HTMLDialogElement} */
@@ -27,10 +48,10 @@ export class FacilityCard extends HTMLElement {
    * @param {Event} e - facility-selected event
    */
   _onFacilitySelected = (e) => {
-    this.render(/** @type {CustomEvent<FacilityProperties>} */ (e).detail);
+    this.render(/** @type {CustomEvent<FacilitySelection>} */ (e).detail);
   };
 
-  /** @param {FacilityProperties} props */
+  /** @param {FacilitySelection} props */
   render(props) {
     this.dialog.replaceChildren();
 
@@ -46,24 +67,28 @@ export class FacilityCard extends HTMLElement {
     title.textContent = props.name;
 
     const list = document.createElement("dl");
-    /**
-     * @param {string} name - Property name (Kind, Operator, Status and etc)
-     * @param {string | null | undefined} value - Property value
-    */
-    const addRow = (name, value) => {
-      const rowName = document.createElement("dt");
-      rowName.textContent = name;
-
-      const rowValue = document.createElement("dd");
-      rowValue.textContent = value ?? "—";
-
-      list.append(rowName, rowValue);
-    };
-    addRow("Kind", props.kind);
-    addRow("Operator", props.operator);
-    addRow("Status", props.status);
+    addRow(list, "Kind", props.kind);
+    addRow(list, "Operator", props.operator);
+    addRow(list, "Status", props.status);
 
     this.dialog.append(close, title, list);
+
+    // Only set when opened from an event feed card, not from map click
+    if (props.event) {
+      const eventTitle = document.createElement("h3");
+      eventTitle.textContent = "Flare event";
+
+      const eventList = document.createElement("dl");
+      addRow(eventList, "Kind", EVENT_KIND_LABELS[props.event.kind]);
+      addRow(eventList, "Period", `${props.event.start_date} – ${props.event.end_date ?? "—"}`);
+      addRow(eventList, "Score", props.event.score.toFixed(2));
+      if (props.event.blind_nights > 0) {
+        addRow(eventList, "Blind nights", String(props.event.blind_nights));
+      }
+
+      this.dialog.append(eventTitle, eventList);
+    }
+
     this.dialog.show();
   }
 }
