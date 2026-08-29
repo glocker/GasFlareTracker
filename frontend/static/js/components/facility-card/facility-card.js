@@ -80,7 +80,8 @@ export class FacilityCard extends HTMLElement {
 
       const eventList = document.createElement("dl");
       addRow(eventList, "Kind", EVENT_KIND_LABELS[props.event.kind]);
-      addRow(eventList, "Period", `${props.event.start_date} – ${props.event.end_date ?? "—"}`);
+      // Null end_date means event is still open, no missing data - say so explicitly
+      addRow(eventList, "Period", `${props.event.start_date} – ${props.event.end_date ?? "Ongoing"}`);
       addRow(eventList, "Score", props.event.score.toFixed(2));
       if (props.event.blind_nights > 0) {
         addRow(eventList, "Blind nights", String(props.event.blind_nights));

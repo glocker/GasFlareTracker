@@ -90,7 +90,8 @@ export class EventFeed extends HTMLElement {
 
     const period = document.createElement("span");
     period.className = "event-feed__period";
-    period.textContent = `${event.start_date} – ${event.end_date ?? "—"}`;
+    // Null end_date means event is still open, no missing data - say so explicitly
+    period.textContent = `${event.start_date} – ${event.end_date ?? "Ongoing"}`;
 
     item.append(facility, kind, period);
 
