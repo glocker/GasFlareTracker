@@ -86,6 +86,12 @@ event-feed .event-feed__period {
   color: #6b7280;
 }
 
+event-feed .event-feed__empty {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
 event-feed .event-feed__blind-badge {
   align-self: flex-start;
   font-size: 0.7rem;

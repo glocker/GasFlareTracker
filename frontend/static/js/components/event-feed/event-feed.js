@@ -17,6 +17,9 @@ export class EventFeed extends HTMLElement {
   /** @type {HTMLUListElement} */
   list;
 
+  /** @type {HTMLParagraphElement} */
+  emptyState;
+
   constructor() {
     super();
 
@@ -49,7 +52,12 @@ export class EventFeed extends HTMLElement {
     this.list = document.createElement("ul");
     this.list.className = "event-feed__list";
 
-    this.panel.append(close, title, this.list);
+    this.emptyState = document.createElement("p");
+    this.emptyState.className = "event-feed__empty";
+    this.emptyState.textContent = "No events found in selected period";
+    this.emptyState.hidden = true;
+
+    this.panel.append(close, title, this.list, this.emptyState);
     this.append(toggle, this.panel);
   }
 
@@ -68,6 +76,8 @@ export class EventFeed extends HTMLElement {
     }
 
     this.list.replaceChildren(...events.map((event) => this.renderCard(event)));
+    this.list.hidden = events.length === 0;
+    this.emptyState.hidden = events.length > 0;
   }
 
   /**
