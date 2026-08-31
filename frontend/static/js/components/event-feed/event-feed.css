@@ -66,6 +66,12 @@ event-feed .event-feed__list {
   gap: 0.5rem;
 }
 
+/* display:flex above beats the UA [hidden]{display:none} rule on its own
+   so hidden attribute set from JS needs an explicit override here */
+event-feed .event-feed__list[hidden] {
+  display: none;
+}
+
 event-feed .event-feed__card {
   display: flex;
   flex-direction: column;
