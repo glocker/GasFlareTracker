@@ -21,14 +21,18 @@ async function getData(url) {
  * include at least: id, name, kind, operator, status. `as_of` is the date the
  * statuses were actually computed for - current_date echoed back, or the
  * backend's own default when omitted.
- * @param {string | undefined} currentDate selected date in date input
+ * @param {string | undefined} currentDate - selected date in date input
+ * @param {string | undefined} [country] - selected region filter, ISO 3166-1 alpha-2 country code
  * @returns {Promise<FacilityCollection>}
  */
-export function fetchFacilities(currentDate) {
+export function fetchFacilities(currentDate, country) {
   const url = new URLSearchParams();
 
   if (currentDate) {
     url.set('current_date', currentDate);
+  }
+  if (country) {
+    url.set('country', country);
   }
 
   return /** @type {Promise<FacilityCollection>} */ (getData(`/api/facilities?${url}`));

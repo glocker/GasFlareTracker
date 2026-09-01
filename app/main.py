@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from datetime import date
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
 
 from app.db import pool
@@ -28,7 +28,11 @@ def health() -> dict:
     return {"status": "ok"}
 
 @app.get("/api/facilities")
-def get_facilities(current_date: date | None = None) -> dict:
+def get_facilities(
+    current_date: date | None = None,
+    # Value is ISO 3166-1 alpha-2 code, matching facility.country_iso2
+    country: str | None = Query(default=None, pattern="^[A-Z]{2}$"),
+) -> dict:
     # Get valid GeoJSON in FeatureCollection
     query = """
             SELECT json_build_object(
@@ -52,7 +56,9 @@ def get_facilities(current_date: date | None = None) -> dict:
                     '[]'::json
                 )
             ) as geojson_collection
-            FROM facility_status_asof(%s);
+            FROM facility_status_asof(%s)
+            -- COALESCE against country_iso2 makes a NULL filter a no-op
+            WHERE country_iso2 = COALESCE(%s, country_iso2);
         """
 
     with pool.connection() as conn:
@@ -60,7 +66,7 @@ def get_facilities(current_date: date | None = None) -> dict:
             # no date given, use latest night we've got
             current_date = conn.execute("SELECT max(night_date) FROM facility_night").fetchone()[0]
 
-        cur = conn.execute(query, [current_date, current_date])
+        cur = conn.execute(query, [current_date, current_date, country])
 
         result = cur.fetchone()
 
