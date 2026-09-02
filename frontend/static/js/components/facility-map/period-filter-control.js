@@ -1,15 +1,15 @@
-import { debounce } from "#app/debounce.js";
+import { PeriodFilter } from "#app/components/period-filter/period-filter.js";
 
 /** @typedef {import("maplibre-gl").Map} MapLibreMap */
 /** @typedef {import("maplibre-gl").IControl} MapLibreIControl */
 
 /**
- * MapLibre IControl that renders date input on map corner
+ * MapLibre IControl to render PeriodFilter on map corner
  * @implements {MapLibreIControl}
  */
 export class PeriodFilterControl {
-  /** @type {HTMLInputElement} */
-  input;
+  /** @type {PeriodFilter} */
+  filter;
 
   /** @type {HTMLElement} */
   container;
@@ -23,26 +23,17 @@ export class PeriodFilterControl {
   }
 
   /**
-   * Called by MapLibre when the control is added to the map.
-   * Builds the input and wraps handlerCallback in a single debounced instance.
-   * @param {MapLibreMap} map - the map this control is being added to
-   * @returns {HTMLElement} the control's container element
+   * Called by MapLibre when control is added to map
+   * @param {MapLibreMap} map - map this control is being added to
+   * @returns {HTMLElement} control's container element
    */
   onAdd(map) {
-    this.input = document.createElement("input");
-    this.input.setAttribute("type", "date");
+    this.filter = new PeriodFilter(this.handlerCallback);
 
     // needs the maplibregl-ctrl class or clicks fall through to canvas
     this.container = document.createElement("div");
     this.container.className = "maplibregl-ctrl";
-    this.container.appendChild(this.input);
-
-    // Wrap once here, not per-event - debounce needs one shared timer across calls
-    this.handlerCallback = debounce(this.handlerCallback, 1000);
-
-    this.input.addEventListener("change", () => {
-      this.handlerCallback(this.input.value || undefined);
-    });
+    this.container.appendChild(this.filter.input);
 
     return this.container;
   }
@@ -52,7 +43,7 @@ export class PeriodFilterControl {
    * @param {string} currentDate - ISO date to display
    */
   setValue(currentDate) {
-    this.input.value = currentDate;
+    this.filter.setValue(currentDate);
   }
 
   /**
