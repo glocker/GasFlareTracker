@@ -1,0 +1,33 @@
+/* Assumes it's placed inside a full-bleed positioned ancestor, same as
+   .map-container in facility-map.css - centers the panel over the map. */
+.map-empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-empty-state__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  max-width: 20rem;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  font-family: system-ui, sans-serif;
+  text-align: center;
+}
+
+.map-empty-state__message {
+  margin: 0;
+  color: #374151;
+}
+
+.map-empty-state__filters {
+  display: flex;
+  gap: 0.5rem;
+}
