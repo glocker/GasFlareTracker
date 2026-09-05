@@ -1,5 +1,6 @@
 import { fetchFacilities } from "#app/api.js";
 import { PeriodFilterControl } from "#app/components/facility-map/period-filter-control.js";
+import { MapEmptyView } from "#app/components/map-empty-view/map-empty-view.js";
 
 /** @typedef {import("maplibre-gl").Map} MapLibreMap */
 /** @typedef {import("#app/types.js").FacilityProperties} FacilityProperties */
@@ -28,6 +29,9 @@ const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 // its own) - so our own same-origin stylesheet is built here instead, resolved
 // against this module's URL, same as the template fetch below.
 const STYLESHEET_URL = new URL("./facility-map.css", import.meta.url);
+const EMPTY_VIEW_STYLESHEET_URL = import.meta.resolve(
+  "#app/components/map-empty-view/map-empty-view.css"
+);
 
 const templateHtml = await fetch(new URL("./facility-map.html", import.meta.url)).then((res) =>
   res.text()
@@ -42,8 +46,17 @@ export class FacilityMap extends HTMLElement {
   /** @type {PeriodFilterControl} */
   periodFilterControl;
 
+  /** @type {MapEmptyView} */
+  mapEmptyView;
+
   /** @type {GeoJSON.FeatureCollection<GeoJSON.Point, FacilityProperties>} */
   geojson;
+
+  /** @type {string | undefined} last date filter value passed to loadFacilities */
+  date;
+
+  /** @type {string | undefined} last region filter value passed to loadFacilities */
+  country;
 
   connectedCallback() {
     // Listener on external target needs connect/disconnect pairing
@@ -54,6 +67,11 @@ export class FacilityMap extends HTMLElement {
     stylesheet.rel = "stylesheet";
     stylesheet.href = STYLESHEET_URL.href;
 
+    // We don't need to await anything before use
+    const emptyViewStylesheet = document.createElement("link");
+    emptyViewStylesheet.rel = "stylesheet";
+    emptyViewStylesheet.href = EMPTY_VIEW_STYLESHEET_URL;
+
     // MapLibre measures the container size synchronously in constructor,
     // before async stylesheet above applied and never remeasures
     // later, so constructing early permanently freezes the canvas at the
@@ -61,7 +79,7 @@ export class FacilityMap extends HTMLElement {
     const stylesheetReady = new Promise((resolve) => {
       stylesheet.addEventListener("load", resolve, { once: true });
     });
-    shadow.append(stylesheet, template.content.cloneNode(true));
+    shadow.append(stylesheet, emptyViewStylesheet, template.content.cloneNode(true));
 
     // Legend toggle doesn't depend on MapLibre or the stylesheet load, so it's
     // wired up right away instead of waiting on stylesheetReady below
@@ -89,6 +107,13 @@ export class FacilityMap extends HTMLElement {
       }
     });
 
+    // No MapLibre dependency either, mounted here too, ahead of stylesheetReady
+    this.mapEmptyView = new MapEmptyView(
+      (date) => this.loadFacilities(date, this.country),
+      (country) => this.loadFacilities(this.date, country)
+    );
+    shadow.append(this.mapEmptyView.element);
+
     stylesheetReady.then(() => {
       const container = /** @type {HTMLElement} */ (shadow.querySelector(".map-container"));
 
@@ -100,8 +125,8 @@ export class FacilityMap extends HTMLElement {
       });
 
       this.map.addControl(new maplibregl.NavigationControl(), "top-right");
-      this.periodFilterControl = new PeriodFilterControl((currentDate) =>
-        this.loadFacilities(currentDate)
+      this.periodFilterControl = new PeriodFilterControl((date) =>
+        this.loadFacilities(date, this.country)
       );
       this.map.addControl(this.periodFilterControl, "top-left");
       this.map.on("load", () => this.loadFacilities());
@@ -135,21 +160,32 @@ export class FacilityMap extends HTMLElement {
   };
 
   /**
-   * Fetches facilities for given date
-   * Also sets map source for first time or updates existing one in place
-   * @param {string | undefined} [currentDate] - selected date filter value
+   * Fetches facilities for given date/region filters, updates the map
+   * source and toggles the empty view
+   * @param {string | undefined} [date] - selected date filter value
+   * @param {string | undefined} [country] - selected region filter value
    */
-  async loadFacilities(currentDate) {
+  async loadFacilities(date, country) {
+    // Remembered so a change in one filter can refetch with the other's last value
+    this.date = date;
+    this.country = country;
+
     let geojson;
     try {
-      geojson = await fetchFacilities(currentDate);
+      geojson = await fetchFacilities(date, country);
     } catch (err) {
       console.error("failed to load facilities", err);
+      this.mapEmptyView.element.hidden = false;
       return;
     }
 
     this.geojson = geojson;
+    this.mapEmptyView.element.hidden = geojson.features.length > 0;
+
+    // Sync both period filters to the date actually served, as_of can
+    // differ from what was requested (e.g. when date was omitted)
     this.periodFilterControl.setValue(geojson.as_of);
+    this.mapEmptyView.periodFilter.setValue(geojson.as_of);
 
     const source = /** @type {import("maplibre-gl").GeoJSONSource | undefined} */ (
       this.map.getSource("facilities")

@@ -62,9 +62,18 @@ def get_facilities(
         """
 
     with pool.connection() as conn:
+        loaded_from, loaded_to = conn.execute(
+            "SELECT min(night_date), max(night_date) FROM facility_night"
+        ).fetchone()
+
         if current_date is None:
             # no date given, use latest night we've got
-            current_date = conn.execute("SELECT max(night_date) FROM facility_night").fetchone()[0]
+            current_date = loaded_to
+
+        # facility_status_asof() always returns every facility
+        # no data - show empty view
+        if loaded_from is None or not (loaded_from <= current_date <= loaded_to):
+            return {"type": "FeatureCollection", "as_of": current_date, "features": []}
 
         cur = conn.execute(query, [current_date, current_date, country])
 
@@ -118,3 +127,9 @@ def get_events(
 # Start page.
 # html=True serves frontend/index.html for "/".
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
