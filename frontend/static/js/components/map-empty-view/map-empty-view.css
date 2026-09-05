@@ -1,6 +1,5 @@
-/* Assumes it's placed inside a full-bleed positioned ancestor, same as
-   .map-container in facility-map.css - centers the panel over the map. */
-.map-empty-state {
+/* Centers the panel over the map */
+.map-empty-view {
   position: absolute;
   inset: 0;
   display: flex;
@@ -8,7 +7,15 @@
   justify-content: center;
 }
 
-.map-empty-state__panel {
+/* `hidden` attribute only works via UA stylesheet's `[hidden] {
+   display: none }` rule, which any rule overrides because of specificity
+   Needs an explicit override, same idea as dialog `left: auto` fix in
+   facility-map.css. */
+.map-empty-view[hidden] {
+  display: none;
+}
+
+.map-empty-view__panel {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,12 +29,12 @@
   text-align: center;
 }
 
-.map-empty-state__message {
+.map-empty-view__message {
   margin: 0;
   color: #374151;
 }
 
-.map-empty-state__filters {
+.map-empty-view__filters {
   display: flex;
   gap: 0.5rem;
 }
