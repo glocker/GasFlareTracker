@@ -39,3 +39,14 @@ def test_get_facilities_filtered_by_country(client: TestClient) -> None:
 def test_get_facilities_rejects_malformed_country(client: TestClient) -> None:
     resp = client.get("/api/facilities", params={"country": "usa"})
     assert resp.status_code == 422
+
+
+def test_get_facilities_outside_loaded_period_is_empty(client: TestClient) -> None:
+    # facility_status_asof() always returns every facility
+    # when we get date in the future or date with no data - return empty array
+    # on UI we show empty view
+    resp = client.get("/api/facilities", params={"current_date": "2027-01-01"})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["as_of"] == "2027-01-01"
+    assert body["features"] == []
