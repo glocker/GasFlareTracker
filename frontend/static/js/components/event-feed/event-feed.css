@@ -35,7 +35,7 @@ event-feed .event-feed__close {
 
 event-feed .event-feed__panel {
   position: absolute;
-  top: 0;
+  top: 3rem; /* padding for period filter */
   left: 0;
   /* dialog's UA style also sets right/bottom for centering - reset explicitly */
   right: auto;
