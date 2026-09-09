@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import date, timedelta
 
 from app.etl.event_detector import NightRecord, compute_events
@@ -21,8 +22,10 @@ EVAL_TO = date(2020, 2, 10)
 
 
 def build_history(
-    hist_start: date, hist_end: date, overrides: dict[date, tuple[float, bool | None]]
-):
+    hist_start: date,
+    hist_end: date,
+    overrides: Mapping[date, tuple[float, bool | None]],
+) -> list[NightRecord]:
     """Flat baseline of frp_sum=10.0 with specific dates overridden"""
     nights = []
     d = hist_start

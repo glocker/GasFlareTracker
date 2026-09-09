@@ -13,7 +13,7 @@ DEFAULT_PARAMS = {
     # how many days above/below event must last before it stops being a
     # spike and becomes regime_up/regime_down
     "event_min_duration_days": 14,
-    # Quantity of nights in a row required to close event - avoids
+    # Quantity of normal nights in a row required to close event - avoids
     # one noisy night splitting single event into two
     "event_close_delay_nights": 3,
 }
@@ -30,6 +30,8 @@ def run(name: str = "v0.1-baseline") -> int:
             """,
             (name, Json(DEFAULT_PARAMS)),
         ).fetchone()
+        if row is None:
+            raise RuntimeError("detector_version insert did not return an id")
         return row[0]
 
 

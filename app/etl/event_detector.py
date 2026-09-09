@@ -57,7 +57,7 @@ def compute_events(
     spike_mult = params["spike_multiplier"]
     reduced_mult = params["reduced_multiplier"]
     min_duration = params["event_min_duration_days"]
-    delay = params["event_close_delay_nights"]
+    close_delay_nights = params["event_close_delay_nights"]
 
     events: list[EventDraft] = []
     segment: dict | None = None
@@ -140,7 +140,7 @@ def compute_events(
             )
         elif state == "normal":
             segment["normal_streak"] += 1
-            if segment["normal_streak"] >= delay:
+            if segment["normal_streak"] >= close_delay_nights:
                 finalize(end_date=segment["last_in_state_date"])
         else:
             # direct flip (above -> below or vice versa) with no normal gap
