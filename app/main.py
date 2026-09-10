@@ -1,6 +1,6 @@
 from contextlib import asynccontextmanager
-from pathlib import Path
 from datetime import date
+from pathlib import Path
 
 from fastapi import FastAPI, Query
 from fastapi.staticfiles import StaticFiles
@@ -62,9 +62,12 @@ def get_facilities(
         """
 
     with pool.connection() as conn:
-        loaded_from, loaded_to = conn.execute(
+        loaded_period = conn.execute(
             "SELECT min(night_date), max(night_date) FROM facility_night"
         ).fetchone()
+        if loaded_period is None:
+            raise RuntimeError("facility_night period query did not return a row")
+        loaded_from, loaded_to = loaded_period
 
         if current_date is None:
             # no date given, use latest night we've got
@@ -79,7 +82,10 @@ def get_facilities(
 
         result = cur.fetchone()
 
-    # psycopg parse column on it's own
+    if result is None:
+        raise RuntimeError("facility query did not return a GeoJSON collection")
+
+    # psycopg parses the JSON column on its own
     return result[0]
 
 
@@ -87,7 +93,7 @@ def get_facilities(
 def get_events(
     date_from: date | None = None,
     date_to: date | None = None,
-    limit: int = 1000,
+    limit: int = Query(default=1000, ge=1, le=5000),
 ) -> dict:
     # Plain JSON, not GeoJSON - events aren't map geometry, just a feed list.
     # date_from/date_to/limit are already here even without pagination in the
@@ -120,6 +126,9 @@ def get_events(
     with pool.connection() as conn:
         cur = conn.execute(query, [date_from, date_to, limit])
         result = cur.fetchone()
+
+    if result is None:
+        raise RuntimeError("event query did not return an events collection")
 
     return result[0]
 

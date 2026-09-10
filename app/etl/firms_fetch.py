@@ -2,7 +2,7 @@ import csv
 import io
 import time
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 
 import httpx
 from psycopg import errors as pg_errors
@@ -69,7 +69,7 @@ def _fetch_csv(source: str, bbox: str, start: date, span: int, client: httpx.Cli
             resp = client.get(url, timeout=30)
             resp.raise_for_status()
             return resp.text
-        except (httpx.HTTPError,) as exc:
+        except httpx.HTTPError as exc:
             last_error = exc
             time.sleep(2**attempt)
     raise RuntimeError(f"FIRMS request failed after {MAX_ATTEMPTS} attempts: {last_error}")
@@ -89,7 +89,7 @@ def _parse_rows(csv_text: str, source: str) -> list[dict]:
         rows.append(
             {
                 "acq_ts": datetime.combine(
-                    acq_date, parse_acq_time(r["acq_time"]), tzinfo=timezone.utc
+                    acq_date, parse_acq_time(r["acq_time"]), tzinfo=UTC
                 ),
                 "night_date": night_date(acq_date, r["acq_time"], lon),
                 "lon": lon,
@@ -167,7 +167,7 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
                         error = str(exc)
 
                     with pool.connection() as conn:
-                        log_id = conn.execute(
+                        log_row = conn.execute(
                             """
                             INSERT INTO fetch_log
                                    (region_id, source, day_from, day_to, n_rows, status, error)
@@ -183,7 +183,10 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
                                 "error" if error else "ok",
                                 error,
                             ),
-                        ).fetchone()[0]
+                        ).fetchone()
+                        if log_row is None:
+                            raise RuntimeError("fetch_log insert did not return an id")
+                        log_id = log_row[0]
 
                         if rows:
                             for r in rows:
@@ -199,7 +202,8 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
                                 conn.execute(
                                     """
                                     INSERT INTO fetch_log
-                                           (region_id, source, day_from, day_to, n_rows, status, error)
+                                           (region_id, source, day_from, day_to,
+                                            n_rows, status, error)
                                     VALUES (%s, %s, %s, %s, %s, 'error', %s)
                                     """,
                                     (region.id, source, start, day_to, len(rows), error[:500]),
@@ -207,14 +211,17 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
 
                     if error:
                         stats["errors"] += 1
-                        print(f"[{done}/{total_windows}] {region.name} {source} {start}: ERROR {error[:200]}")
+                        print(
+                            f"[{done}/{total_windows}] {region.name} {source} {start}: "
+                            f"ERROR {error[:200]}"
+                        )
                     else:
                         stats["rows"] += len(rows)
                         stats["windows"] += 1
                         if done % 20 == 0 or len(rows) > 0:
                             print(
-                                f"[{done}/{total_windows}] {region.name} {source} {start}..{day_to}: "
-                                f"{len(rows)} rows"
+                                f"[{done}/{total_windows}] {region.name} {source} "
+                                f"{start}..{day_to}: {len(rows)} rows"
                             )
 
                     time.sleep(REQUEST_DELAY_S)

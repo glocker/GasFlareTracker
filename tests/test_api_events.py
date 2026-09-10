@@ -37,6 +37,11 @@ def test_get_events_shape(client: TestClient) -> None:
         assert event["kind"] in {"spike", "regime_up", "regime_down"}
 
 
+def test_get_events_rejects_invalid_limit(client: TestClient) -> None:
+    resp = client.get("/api/events", params={"limit": 0})
+    assert resp.status_code == 422
+
+
 def test_get_events_sorted_desc_and_date_filtered(client: TestClient) -> None:
     resp = client.get(
         "/api/events",
