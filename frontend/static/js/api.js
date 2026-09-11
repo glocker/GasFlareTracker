@@ -42,9 +42,10 @@ export function fetchFacilities(currentDate, country) {
  * GET /api/events -> flare_event rows joined with facility name, newest first.
  * @param {string | undefined} [dateFrom] - inclusive lower bound on start_date
  * @param {string | undefined} [dateTo] - inclusive upper bound on start_date
+ * @param {number | undefined} [limit] - maximum number of events to fetch
  * @returns {Promise<{ events: FlareEvent[] }>}
  */
-export function fetchEvents(dateFrom, dateTo) {
+export function fetchEvents(dateFrom, dateTo, limit) {
   const url = new URLSearchParams();
 
   if (dateFrom) {
@@ -52,6 +53,9 @@ export function fetchEvents(dateFrom, dateTo) {
   }
   if (dateTo) {
     url.set('date_to', dateTo);
+  }
+  if (limit !== undefined) {
+    url.set('limit', String(limit));
   }
 
   return /** @type {Promise<{ events: FlareEvent[] }>} */ (getData(`/api/events?${url}`));
