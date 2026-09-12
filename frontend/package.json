@@ -2,11 +2,13 @@
   "name": "gasflaretracker-frontend",
   "private": true,
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@playwright/test": "^1.61.1",
+    "@types/geojson": "^7946.0.14",
     "maplibre-gl": "^4.7.1",
-    "@types/geojson": "^7946.0.14"
+    "typescript": "^5.7.0"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit -p jsconfig.json"
+    "typecheck": "tsc --noEmit -p jsconfig.json",
+    "test:e2e": "playwright test"
   }
 }

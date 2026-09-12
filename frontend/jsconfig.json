@@ -1,6 +1,4 @@
 {
-  // strictPropertyInitialization is off: custom elements assign fields in
-  // connectedCallback (the lifecycle hook), not the constructor.
   "compilerOptions": {
     "target": "ESNext",
     "module": "ESNext",
