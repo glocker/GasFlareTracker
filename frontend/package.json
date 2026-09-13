@@ -1,6 +1,9 @@
 {
   "name": "gasflaretracker-frontend",
   "private": true,
+  "imports": {
+    "#e2e/fixtures": "./e2e/fixtures.js"
+  },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
     "@types/geojson": "^7946.0.14",

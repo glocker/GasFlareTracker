@@ -87,6 +87,15 @@ async function installDefaultRoutes(page) {
       return;
     }
 
+    if (requestUrl.href === "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css") {
+      await route.fulfill({
+        status: 200,
+        contentType: "text/css",
+        body: "",
+      });
+      return;
+    }
+
     if (requestUrl.origin === "http://127.0.0.1:4173") {
       if (requestUrl.pathname === "/api/facilities") {
         await route.fulfill({ status: 200, contentType: "application/json", json: emptyFacilities });

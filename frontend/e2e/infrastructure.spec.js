@@ -1,4 +1,4 @@
-const { test, expect } = require("./fixtures");
+const { test, expect } = require("#e2e/fixtures");
 
 test("blocks unexpected external requests", async ({ page }) => {
   const result = await page.evaluate(async () => {
