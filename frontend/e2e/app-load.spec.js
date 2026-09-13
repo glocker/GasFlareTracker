@@ -1,4 +1,4 @@
-const { test, expect } = require("./fixtures");
+const { test, expect } = require("#e2e/fixtures");
 
 test("loads app shell without browser errors", async ({ page }) => {
   const pageErrors = [];
