@@ -8,6 +8,24 @@ const emptyFacilities = {
 
 const emptyEvents = { events: [] };
 
+const sampleFacilities = {
+  type: "FeatureCollection",
+  as_of: "2020-12-31",
+  features: [
+    {
+      type: "Feature",
+      id: 101,
+      geometry: { type: "Point", coordinates: [-95.36, 29.75] },
+      properties: {
+        name: "Smoke Test Refinery",
+        kind: "refinery",
+        operator: "Test Operator",
+        status: "normal",
+      },
+    },
+  ],
+};
+
 const maplibreStub = String.raw`
 (() => {
   class StubNavigationControl {}
@@ -74,7 +92,7 @@ const maplibreStub = String.raw`
  * Installs default browser-side stubs shared by frontend e2e tests.
  * @param {import("@playwright/test").Page} page - Playwright page to configure
  */
-async function installDefaultRoutes(page) {
+async function installDefaultRoutes(page, facilitiesResponse = emptyFacilities, eventsResponse = emptyEvents) {
   await page.route("**/*", async (route) => {
     const requestUrl = new URL(route.request().url());
 
@@ -98,11 +116,11 @@ async function installDefaultRoutes(page) {
 
     if (requestUrl.origin === "http://127.0.0.1:4173") {
       if (requestUrl.pathname === "/api/facilities") {
-        await route.fulfill({ status: 200, contentType: "application/json", json: emptyFacilities });
+        await route.fulfill({ status: 200, contentType: "application/json", json: facilitiesResponse });
         return;
       }
       if (requestUrl.pathname === "/api/events") {
-        await route.fulfill({ status: 200, contentType: "application/json", json: emptyEvents });
+        await route.fulfill({ status: 200, contentType: "application/json", json: eventsResponse });
         return;
       }
       await route.continue();
@@ -114,8 +132,10 @@ async function installDefaultRoutes(page) {
 }
 
 const test = base.extend({
-  page: async ({ page }, use) => {
-    await installDefaultRoutes(page);
+  facilitiesResponse: [emptyFacilities, { option: true }],
+  eventsResponse: [emptyEvents, { option: true }],
+  page: async ({ page, facilitiesResponse, eventsResponse }, use) => {
+    await installDefaultRoutes(page, facilitiesResponse, eventsResponse);
     await use(page);
   },
 });
@@ -126,4 +146,5 @@ module.exports = {
   installDefaultRoutes,
   emptyFacilities,
   emptyEvents,
+  sampleFacilities,
 };
