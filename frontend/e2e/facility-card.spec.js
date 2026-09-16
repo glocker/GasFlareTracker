@@ -2,7 +2,11 @@ const { test, expect, sampleFacilities } = require("#e2e/fixtures");
 
 test.use({ facilitiesResponse: sampleFacilities });
 
-test("opens facility card on point click and positions it on the right", async ({ page }) => {
+/**
+ * Opens first mocked facility through same map click path users hit
+ * @param {import("@playwright/test").Page} page - Playwright page to drive
+ */
+async function openFirstFacilityCard(page) {
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   await page.waitForFunction(() => {
@@ -26,6 +30,11 @@ test("opens facility card on point click and positions it on the right", async (
 
   const dialog = page.locator("facility-card dialog");
   await expect(dialog).toHaveJSProperty("open", true);
+  return dialog;
+}
+
+test("opens facility card on point click and positions it on right", async ({ page }) => {
+  const dialog = await openFirstFacilityCard(page);
   await expect(dialog).toContainText("Smoke Test Refinery");
   await expect(dialog).toContainText("refinery");
   await expect(dialog).toContainText("Test Operator");
@@ -40,4 +49,20 @@ test("opens facility card on point click and positions it on the right", async (
   expect(rightGap).toBeGreaterThanOrEqual(14);
   expect(rightGap).toBeLessThanOrEqual(18);
   expect(box.x).toBeGreaterThan(100);
+});
+
+test("closes facility card on Escape", async ({ page }) => {
+  const dialog = await openFirstFacilityCard(page);
+
+  await page.keyboard.press("Escape");
+
+  await expect(dialog).toHaveJSProperty("open", false);
+});
+
+test("closes facility card on outside click", async ({ page }) => {
+  const dialog = await openFirstFacilityCard(page);
+
+  await page.mouse.click(10, 10);
+
+  await expect(dialog).toHaveJSProperty("open", false);
 });
