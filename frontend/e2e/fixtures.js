@@ -8,6 +8,23 @@ const emptyFacilities = {
 
 const emptyEvents = { events: [] };
 
+const sampleEvents = {
+  events: [
+    {
+      id: 201,
+      facility_id: 101,
+      facility_name: "Smoke Test Refinery",
+      kind: "regime_up",
+      start_date: "2020-06-01",
+      end_date: null,
+      peak_frp: 40,
+      baseline_frp: 10,
+      score: 4,
+      blind_nights: 2,
+    },
+  ],
+};
+
 const sampleFacilities = {
   type: "FeatureCollection",
   as_of: "2020-12-31",
@@ -146,5 +163,6 @@ module.exports = {
   installDefaultRoutes,
   emptyFacilities,
   emptyEvents,
+  sampleEvents,
   sampleFacilities,
 };
