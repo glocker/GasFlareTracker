@@ -60,7 +60,12 @@ const maplibreStub = String.raw`
       window.__maplibreMaps.push(this);
     }
 
-    addControl() {}
+    addControl(control) {
+      if (typeof control?.onAdd === "function") {
+        const element = control.onAdd(this);
+        this.options.container.append(element);
+      }
+    }
 
     addSource(id, source) {
       this.sources.set(id, {

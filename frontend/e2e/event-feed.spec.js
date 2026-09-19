@@ -1,4 +1,4 @@
-const { test, expect, sampleEvents } = require("#e2e/fixtures");
+const { test, expect, sampleEvents, sampleFacilities } = require("#e2e/fixtures");
 
 test("shows empty state when there are no flare events", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -21,7 +21,7 @@ test("shows empty state when there are no flare events", async ({ page }) => {
 });
 
 test.describe("with flare events", () => {
-  test.use({ eventsResponse: sampleEvents });
+  test.use({ eventsResponse: sampleEvents, facilitiesResponse: sampleFacilities });
 
   test("renders ongoing event card with blind nights badge", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -39,5 +39,36 @@ test.describe("with flare events", () => {
     await expect(card.locator(".event-feed__period")).toHaveText("2020-06-01 – Ongoing");
     await expect(card.locator(".event-feed__blind-badge")).toHaveText("2 blind nights");
     await expect(page.locator("event-feed .event-feed__empty")).toBeHidden();
+  });
+
+  test("clicking event card flies to facility and opens card with clicked event", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    await page.waitForFunction(() => {
+      const map = window.__maplibreMaps?.[0];
+      return Boolean(map?.getSource("facilities")?.data?.features?.length);
+    });
+
+    const eventCard = page.locator("event-feed .event-feed__card");
+    await expect(eventCard).toHaveCount(1);
+    await page.getByRole("button", { name: "Show events" }).click();
+    await eventCard.click();
+
+    const flyToHandle = await page.waitForFunction(() => window.__maplibreMaps?.[0]?.lastFlyTo ?? null);
+    const flyTo = await flyToHandle.jsonValue();
+    expect(flyTo).toMatchObject({
+      center: [-95.36, 29.75],
+      zoom: 9,
+    });
+
+    const dialog = page.locator("facility-card dialog");
+    await expect(dialog).toHaveJSProperty("open", true);
+    await expect(dialog.locator("h2")).toHaveText("Smoke Test Refinery");
+    await expect(dialog).toContainText("Kindrefinery");
+    await expect(dialog.locator("h3")).toHaveText("Flare event");
+    await expect(dialog).toContainText("KindRegime up");
+    await expect(dialog).toContainText("Period2020-06-01 – Ongoing");
+    await expect(dialog).toContainText("Score4.00");
+    await expect(dialog).toContainText("Blind nights2");
   });
 });
