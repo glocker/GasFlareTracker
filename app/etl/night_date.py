@@ -1,5 +1,6 @@
 from datetime import date, datetime, time, timedelta
 
+
 # FIRMS reports acq_time/acq_date in UTC. night_date is the LOCAL calendar
 # date the detection belongs to (see db/schema.sql). US VIIRS night overpasses
 # cluster around 01:00-03:00 local and day overpasses around 12:00-14:00 local
