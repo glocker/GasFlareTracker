@@ -36,11 +36,11 @@ def main() -> None:
     rebuild_nights.add_argument("--from", dest="date_from", required=True, type=date.fromisoformat)
     rebuild_nights.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
 
-    refresh_status = sub.add_parser("refresh-status", help="Refresh the facility_status view")
+    refresh_status = sub.add_parser("refresh-status", help="Refresh facility_status view")
     refresh_status.add_argument(
         "--concurrently",
         action="store_true",
-        help="Refresh without blocking readers; requires the view to be populated already",
+        help="Refresh without blocking readers; requires view to be populated already",
     )
 
     # Flare event detector

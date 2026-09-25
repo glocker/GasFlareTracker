@@ -1,0 +1,36 @@
+name: Backend checks
+
+on:
+  push:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  backend:
+    name: Lint and pure tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -e ".[dev]"
+
+      - name: Ruff
+        run: python -m ruff check app tests
+
+      - name: Pure pytest
+        run: python -m pytest tests/test_night_date.py tests/test_event_detector.py
