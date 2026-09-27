@@ -12,6 +12,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p jsconfig.json",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run test:e2e"
   }
 }
