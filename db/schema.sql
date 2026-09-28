@@ -239,11 +239,19 @@ CREATE TABLE flare_event_confirmation (
 -- Solves the Port Arthur problem: two refineries 1.5 km apart, a 9 km
 -- bounding box, a detection lands in both. The correct answer is to
 -- assign it to the NEAREST one, not to both.
-CREATE OR REPLACE FUNCTION match_detections(p_from date, p_to date)
+CREATE OR REPLACE FUNCTION match_detections(p_from date, p_to date, p_force boolean DEFAULT false)
 RETURNS integer AS $$
 DECLARE
     n integer;
 BEGIN
+    IF p_force THEN
+        UPDATE detection
+           SET facility_id = NULL,
+               dist_m      = NULL
+         WHERE night_date >= p_from
+           AND night_date <  p_to;
+    END IF;
+
     WITH nearest AS (
         SELECT d.id,
                d.night_date,
@@ -279,6 +287,10 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION rebuild_facility_nights(p_from date, p_to date)
 RETURNS void AS $$
 BEGIN
+    DELETE FROM facility_night
+     WHERE night_date >= p_from
+       AND night_date <  p_to;
+
     -- first the rollup itself (night observations only)
     INSERT INTO facility_night (facility_id, night_date, n_det, frp_sum, frp_max)
     SELECT facility_id,
@@ -290,15 +302,11 @@ BEGIN
      WHERE facility_id IS NOT NULL
        AND daynight = 'N'
        AND night_date >= p_from AND night_date < p_to
-     GROUP BY facility_id, night_date
-    ON CONFLICT (facility_id, night_date) DO UPDATE
-       SET n_det   = EXCLUDED.n_det,
-           frp_sum = EXCLUDED.frp_sum,
-           frp_max = EXCLUDED.frp_max;
+     GROUP BY facility_id, night_date;
 
     -- then fill in the zeros: the night existed, no detection occurred
     INSERT INTO facility_night (facility_id, night_date, n_det, frp_sum, frp_max)
-    SELECT f.id, d.night_date, 0, 0, 0
+    SELECT f.id, d.night_date::date, 0, 0, 0
       FROM facility f
      CROSS JOIN generate_series(p_from, p_to - 1, interval '1 day') AS d(night_date)
     ON CONFLICT (facility_id, night_date) DO NOTHING;

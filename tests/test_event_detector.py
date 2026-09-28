@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 from datetime import date, timedelta
 
+from app.etl import event_detector
 from app.etl.event_detector import NightRecord, compute_events
 
 # Small, hand-verifiable window sizes. recent_window_days=1 means "recent" is
@@ -170,6 +171,64 @@ def test_insufficient_baseline_history_does_not_produce_a_false_event():
     events = compute_events(nights, PARAMS, lone_night, lone_night + timedelta(1))
 
     assert events == []
+
+
+class FakeResult:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+    def fetchall(self):
+        return self.rows
+
+
+class FakeConnection:
+    def __init__(self):
+        self.calls = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def execute(self, query, params=None):
+        sql = str(query)
+        self.calls.append((sql, params))
+
+        if "SELECT id, params FROM detector_version" in sql:
+            return FakeResult([(42, PARAMS)])
+        if "SELECT id FROM facility" in sql:
+            return FakeResult([(7,)])
+        if "SELECT night_date, frp_sum, observable" in sql:
+            history_from = params[1]
+            history_to = params[2]
+            nights = build_history(history_from, history_to - timedelta(days=1), {})
+            return FakeResult([(n.night_date, n.frp_sum, n.observable) for n in nights])
+        return FakeResult([])
+
+
+class FakePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def connection(self):
+        return self.conn
+
+
+def test_run_deletes_existing_events_for_detector_and_date_window(monkeypatch):
+    conn = FakeConnection()
+    monkeypatch.setattr(event_detector, "pool", FakePool(conn))
+
+    inserted = event_detector.run(EVAL_FROM, EVAL_TO)
+
+    assert inserted == 0
+    assert any(
+        "DELETE FROM flare_event" in sql and params == (42, EVAL_FROM, EVAL_TO)
+        for sql, params in conn.calls
+    )
 
 
 def test_baseline_window_excludes_the_recent_window():

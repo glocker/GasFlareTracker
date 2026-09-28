@@ -187,6 +187,16 @@ def run(p_from: date, p_to: date, detector_id: int | None = None) -> int:
         history_from = p_from - timedelta(days=params["baseline_window_days"])
         facility_ids = [r[0] for r in conn.execute("SELECT id FROM facility").fetchall()]
 
+        conn.execute(
+            """
+            DELETE FROM flare_event
+             WHERE detector_id = %s
+               AND start_date >= %s
+               AND start_date <  %s
+            """,
+            (detector_id, p_from, p_to),
+        )
+
         n_events = 0
         for facility_id in facility_ids:
             rows = conn.execute(
@@ -204,8 +214,6 @@ def run(p_from: date, p_to: date, detector_id: int | None = None) -> int:
             ]
 
             for ev in compute_events(nights, params, eval_from=p_from, eval_to=p_to):
-                # upsert, not insert: an ongoing event (end_date NULL) just
-                # gets its end_date/score updated the next time this runs
                 conn.execute(
                     """
                     INSERT INTO flare_event

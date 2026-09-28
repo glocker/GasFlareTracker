@@ -23,12 +23,17 @@ def main() -> None:
     fetch_firms.add_argument("--sources", nargs="+", default=None)
 
     match_detections = sub.add_parser(
-        "match-detections", help="Attach unmatched detections to the nearest facility"
+        "match-detections", help="Attach detections to the nearest facility"
     )
     match_detections.add_argument(
         "--from", dest="date_from", required=True, type=date.fromisoformat
     )
     match_detections.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
+    match_detections.add_argument(
+        "--force-rematch",
+        action="store_true",
+        help="Clear existing matches in date range before matching again",
+    )
 
     rebuild_nights = sub.add_parser(
         "rebuild-facility-nights", help="Rebuild nightly facility rollups from matched detections"
@@ -68,7 +73,8 @@ def main() -> None:
         elif args.command == "match-detections":
             with pool.connection() as conn:
                 row = conn.execute(
-                    "SELECT match_detections(%s, %s)", (args.date_from, args.date_to)
+                    "SELECT match_detections(%s, %s, %s)",
+                    (args.date_from, args.date_to, args.force_rematch),
                 ).fetchone()
                 conn.commit()
             print(f"matched {row[0]} detection rows")

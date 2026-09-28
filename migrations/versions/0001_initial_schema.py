@@ -33,6 +33,7 @@ def downgrade() -> None:
         """
         DROP MATERIALIZED VIEW IF EXISTS facility_status CASCADE;
         DROP FUNCTION IF EXISTS rebuild_facility_nights(date, date);
+        DROP FUNCTION IF EXISTS match_detections(date, date, boolean);
         DROP FUNCTION IF EXISTS match_detections(date, date);
         DROP TABLE IF EXISTS flare_event_confirmation CASCADE;
         DROP TABLE IF EXISTS flare_event CASCADE;
