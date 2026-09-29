@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+import app.main as main
 from app.main import app
 
 
@@ -35,6 +36,52 @@ def test_get_events_shape(client: TestClient) -> None:
             "blind_nights",
         }
         assert event["kind"] in {"spike", "regime_up", "regime_down"}
+
+
+class FakeResult:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+
+class FakeConnection:
+    def __init__(self):
+        self.calls = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def execute(self, query, params=None):
+        self.calls.append((str(query), params))
+        return FakeResult([({"events": []},)])
+
+
+class FakePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def connection(self):
+        return self.conn
+
+
+def test_get_events_filters_to_latest_detector_version(monkeypatch) -> None:
+    conn = FakeConnection()
+    monkeypatch.setattr(main, "pool", FakePool(conn))
+
+    body = main.get_events(limit=25)
+
+    assert body == {"events": []}
+    sql, params = conn.calls[0]
+    assert "WITH current_detector AS" in sql
+    assert "FROM detector_version" in sql
+    assert "ORDER BY id DESC" in sql
+    assert "JOIN current_detector cd ON cd.id = fe.detector_id" in sql
+    assert params == [None, None, 25]
 
 
 def test_get_events_rejects_invalid_limit(client: TestClient) -> None:

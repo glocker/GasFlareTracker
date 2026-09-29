@@ -103,6 +103,12 @@ def get_events(
                 'events', COALESCE(json_agg(row_to_json(e)), '[]'::json)
             ) AS events_collection
             FROM (
+                WITH current_detector AS (
+                    SELECT id
+                      FROM detector_version
+                     ORDER BY id DESC
+                     LIMIT 1
+                )
                 SELECT fe.id,
                        fe.facility_id,
                        f.name AS facility_name,
@@ -114,6 +120,7 @@ def get_events(
                        fe.score,
                        fe.blind_nights
                   FROM flare_event fe
+                  JOIN current_detector cd ON cd.id = fe.detector_id
                   JOIN facility f ON f.id = fe.facility_id
                  -- COALESCE against fe.start_date makes a NULL bound a no-op
                  WHERE fe.start_date >= COALESCE(%s, fe.start_date)
