@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 from statistics import median
+from typing import Any
 
-from app.db import pool
+pool: Any | None = None
 
 # No DB access below - kept pure so state machine (segment grouping,
 # delay, spike vs regime) can be unit tested without live Postgres,
@@ -171,9 +172,18 @@ def compute_events(
 # facility, run it through compute_events(), write results to flare_event
 
 
+def _db_pool():
+    global pool
+    if pool is None:
+        from app.db import pool as db_pool
+
+        pool = db_pool
+    return pool
+
+
 def run(p_from: date, p_to: date, detector_id: int | None = None) -> int:
     # Caller owns pool lifecycle (see app/cli.py) - already open here
-    with pool.connection() as conn:
+    with _db_pool().connection() as conn:
         if detector_id is None:
             row = conn.execute(
                 "SELECT id, params FROM detector_version ORDER BY id DESC LIMIT 1"
@@ -252,9 +262,10 @@ def run(p_from: date, p_to: date, detector_id: int | None = None) -> int:
 if __name__ == "__main__":
     import sys
 
-    pool.open()
+    db_pool = _db_pool()
+    db_pool.open()
     try:
         n = run(date.fromisoformat(sys.argv[1]), date.fromisoformat(sys.argv[2]))
         print(f"inserted/updated {n} flare_event rows")
     finally:
-        pool.close()
+        db_pool.close()
