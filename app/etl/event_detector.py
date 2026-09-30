@@ -27,9 +27,11 @@ class EventDraft:
     blind_nights: int
 
 
-def _window_median(by_date: dict[date, NightRecord], start: date, end: date) -> float | None:
+def _window_median(
+    by_date: dict[date, NightRecord], start: date, end: date, min_count: int = 1
+) -> float | None:
     values = [r.frp_sum for d, r in by_date.items() if start <= d <= end]
-    return median(values) if values else None
+    return median(values) if len(values) >= min_count else None
 
 
 def compute_events(
@@ -46,8 +48,8 @@ def compute_events(
     @param nights - full history, needs at least baseline_window_days of
       lead in before eval_from or earliest nights won't have baseline
     @param params - detector_version.params: spike_multiplier, reduced_multiplier,
-      baseline_window_days, recent_window_days, event_min_duration_days,
-      event_close_delay_nights
+      baseline_window_days, recent_window_days, min_baseline_nights,
+      event_min_duration_days, event_close_delay_nights
     @param eval_from - first night to evaluate (inclusive)
     @param eval_to - night to stop at (exclusive)
     """
@@ -56,6 +58,7 @@ def compute_events(
     baseline_days = params["baseline_window_days"]
     spike_mult = params["spike_multiplier"]
     reduced_mult = params["reduced_multiplier"]
+    min_baseline_nights = params.get("min_baseline_nights", 0)
     min_duration = params["event_min_duration_days"]
     close_delay_nights = params["event_close_delay_nights"]
 
@@ -105,7 +108,9 @@ def compute_events(
         baseline_start = t - timedelta(days=baseline_days - 1)
 
         recent = _window_median(by_date, recent_start, t)
-        baseline = _window_median(by_date, baseline_start, baseline_end)
+        baseline = _window_median(
+            by_date, baseline_start, baseline_end, min_count=min_baseline_nights
+        )
 
         if recent is None or not baseline:
             # not enough history yet, or baseline is flat zero - no ratio to compare

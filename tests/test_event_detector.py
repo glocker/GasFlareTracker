@@ -12,6 +12,7 @@ PARAMS = {
     "reduced_multiplier": 0.5,
     "baseline_window_days": 21,
     "recent_window_days": 1,
+    "min_baseline_nights": 15,
     "event_min_duration_days": 4,
     "event_close_delay_nights": 2,
 }
@@ -173,6 +174,27 @@ def test_insufficient_baseline_history_does_not_produce_a_false_event():
     assert events == []
 
 
+def test_partial_baseline_below_minimum_does_not_produce_a_false_event():
+    params = {**PARAMS, "min_baseline_nights": 15}
+    nights = build_history(D - timedelta(days=10), D + timedelta(days=3), {D: (40.0, None)})
+
+    events = compute_events(nights, params, D, D + timedelta(days=3))
+
+    assert events == []
+
+
+def test_baseline_at_minimum_coverage_can_produce_event():
+    params = {**PARAMS, "min_baseline_nights": 15}
+    nights = build_history(D - timedelta(days=15), D + timedelta(days=3), {D: (40.0, None)})
+
+    events = compute_events(nights, params, D, D + timedelta(days=3))
+
+    assert len(events) == 1
+    assert events[0].kind == "spike"
+    assert events[0].start_date == D
+    assert events[0].baseline_frp == 10.0
+
+
 class FakeResult:
     def __init__(self, rows):
         self.rows = rows
@@ -242,6 +264,7 @@ def test_baseline_window_excludes_the_recent_window():
         "reduced_multiplier": 0.5,
         "baseline_window_days": 30,
         "recent_window_days": 3,
+        "min_baseline_nights": 20,
         "event_min_duration_days": 4,
         "event_close_delay_nights": 2,
     }

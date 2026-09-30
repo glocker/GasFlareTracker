@@ -10,6 +10,10 @@ DEFAULT_PARAMS = {
     "reduced_multiplier": 0.5,
     "baseline_window_days": 365,
     "recent_window_days": 30,
+    # With recent_window_days=30 the 365-day baseline window has 335 usable
+    # nights. Requiring 300 blocks detections from thin/partial history while
+    # keeping full-2019 baseline usable for January 2020 events.
+    "min_baseline_nights": 300,
     # how many days above/below event must last before it stops being a
     # spike and becomes regime_up/regime_down
     "event_min_duration_days": 14,
@@ -19,7 +23,7 @@ DEFAULT_PARAMS = {
 }
 
 
-def run(name: str = "v0.1-baseline") -> int:
+def run(name: str = "v0.1-baseline-min-coverage") -> int:
     # Caller owns pool lifecycle (see app/cli.py) - assumed already open here.
     with pool.connection() as conn:
         row = conn.execute(

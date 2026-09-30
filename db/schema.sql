@@ -116,6 +116,8 @@ CREATE TABLE detection (
 ) PARTITION BY RANGE (night_date);
 
 -- Partitions by year. Create ahead of time or via a script.
+CREATE TABLE detection_2019 PARTITION OF detection
+    FOR VALUES FROM ('2019-01-01') TO ('2020-01-01');
 CREATE TABLE detection_2020 PARTITION OF detection
     FOR VALUES FROM ('2020-01-01') TO ('2021-01-01');
 CREATE TABLE detection_2021 PARTITION OF detection
