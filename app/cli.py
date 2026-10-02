@@ -56,7 +56,9 @@ def main() -> None:
     coordinate_qa_parser.add_argument(
         "--from", dest="date_from", required=True, type=date.fromisoformat
     )
-    coordinate_qa_parser.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
+    coordinate_qa_parser.add_argument(
+        "--to", dest="date_to", required=True, type=date.fromisoformat
+    )
     coordinate_qa_parser.add_argument("--cluster-distance-m", type=int, default=3000)
     coordinate_qa_parser.add_argument("--limit", type=int, default=50)
 
