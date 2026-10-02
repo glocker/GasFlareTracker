@@ -1,8 +1,16 @@
 import argparse
+import json
 from datetime import date
 
 from app.db import pool
-from app.etl import detector_bootstrap, eia_facilities, event_detector, fetch_regions, firms_fetch
+from app.etl import (
+    coordinate_qa,
+    detector_bootstrap,
+    eia_facilities,
+    event_detector,
+    fetch_regions,
+    firms_fetch,
+)
 
 
 def main() -> None:
@@ -40,6 +48,17 @@ def main() -> None:
     )
     rebuild_nights.add_argument("--from", dest="date_from", required=True, type=date.fromisoformat)
     rebuild_nights.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
+
+    coordinate_qa_parser = sub.add_parser(
+        "coordinate-qa",
+        help="Report facilities with no detections and close facility clusters for coordinate QA",
+    )
+    coordinate_qa_parser.add_argument(
+        "--from", dest="date_from", required=True, type=date.fromisoformat
+    )
+    coordinate_qa_parser.add_argument("--to", dest="date_to", required=True, type=date.fromisoformat)
+    coordinate_qa_parser.add_argument("--cluster-distance-m", type=int, default=3000)
+    coordinate_qa_parser.add_argument("--limit", type=int, default=50)
 
     refresh_status = sub.add_parser("refresh-status", help="Refresh facility_status view")
     refresh_status.add_argument(
@@ -85,6 +104,11 @@ def main() -> None:
                 )
                 conn.commit()
             print(f"rebuilt facility_night rows from {args.date_from} to {args.date_to}")
+        elif args.command == "coordinate-qa":
+            report = coordinate_qa.run(
+                args.date_from, args.date_to, args.cluster_distance_m, args.limit
+            )
+            print(json.dumps(report, indent=2, ensure_ascii=False))
         elif args.command == "refresh-status":
             statement = "REFRESH MATERIALIZED VIEW facility_status"
             if args.concurrently:

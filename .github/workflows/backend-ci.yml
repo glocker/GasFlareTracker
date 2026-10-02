@@ -33,4 +33,10 @@ jobs:
         run: python -m ruff check app tests
 
       - name: Pure pytest
-        run: python -m pytest tests/test_night_date.py tests/test_event_detector.py
+        run: >
+          python -m pytest
+          tests/test_night_date.py
+          tests/test_event_detector.py
+          tests/test_eia_facilities.py
+          tests/test_known_coordinates.py
+          tests/test_match_detections.py
