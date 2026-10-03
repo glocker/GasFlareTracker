@@ -394,5 +394,6 @@ SELECT f.id,
                  FILTER (WHERE night_date > p_asof - 365) AS frp_365d_median
         FROM facility_night
        WHERE facility_id = f.id
+         AND night_date <= p_asof
   ) fn ON true;
 $$ LANGUAGE sql STABLE;

@@ -40,3 +40,4 @@ jobs:
           tests/test_eia_facilities.py
           tests/test_known_coordinates.py
           tests/test_match_detections.py
+          tests/test_facility_status_temporal.py
