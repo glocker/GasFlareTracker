@@ -9,6 +9,10 @@ export interface FlareEvent {
   id: number;
   facility_id: number;
   facility_name: string;
+  facility_kind: string;
+  facility_operator: string | null;
+  facility_lon: number;
+  facility_lat: number;
   kind: "spike" | "regime_up" | "regime_down";
   start_date: string;
   end_date: string | null;
@@ -19,6 +23,10 @@ export interface FlareEvent {
 }
 
 // facility selected event detail (set when opened from event feed card)
-export interface FacilitySelection extends FacilityProperties {
+export interface FacilitySelection {
+  name: string;
+  kind: string | null | undefined;
+  operator: string | null | undefined;
+  status: FacilityProperties["status"] | undefined;
   event?: FlareEvent;
 }

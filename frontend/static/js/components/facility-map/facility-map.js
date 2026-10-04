@@ -145,15 +145,23 @@ export class FacilityMap extends HTMLElement {
   _onEventSelected = (e) => {
     const flareEvent = /** @type {CustomEvent<FlareEvent>} */ (e).detail;
     const feature = this.geojson?.features.find((f) => f.id === flareEvent.facility_id);
-    if (!feature || !this.map) return;
+    if (!this.map) return;
 
     this.map.flyTo({
-      center: /** @type {[number, number]} */ (feature.geometry.coordinates),
+      center: [flareEvent.facility_lon, flareEvent.facility_lat],
       zoom: Math.max(this.map.getZoom(), 9),
     });
+
+    const facility = feature?.properties ?? {
+      name: flareEvent.facility_name,
+      kind: flareEvent.facility_kind,
+      operator: flareEvent.facility_operator,
+      status: undefined,
+    };
+
     this.dispatchEvent(
       new CustomEvent("facility-selected", {
-        detail: { ...feature.properties, event: flareEvent },
+        detail: { ...facility, event: flareEvent },
         bubbles: true,
       })
     );

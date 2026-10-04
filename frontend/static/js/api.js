@@ -39,7 +39,7 @@ export function fetchFacilities(currentDate, country) {
 }
 
 /**
- * GET /api/events -> flare_event rows joined with facility name, newest first.
+ * GET /api/events -> flare_event rows joined with facility identity and coordinates, newest first.
  * @param {string | undefined} [dateFrom] - inclusive lower bound on start_date
  * @param {string | undefined} [dateTo] - inclusive upper bound on start_date
  * @param {number | undefined} [limit] - maximum number of events to fetch

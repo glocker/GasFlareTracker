@@ -20,6 +20,37 @@ test("shows empty state when there are no flare events", async ({ page }) => {
   await expect(page.locator("event-feed .event-feed__card")).toHaveCount(0);
 });
 
+test.describe("with event coordinates but no visible map facilities", () => {
+  test.use({ eventsResponse: sampleEvents });
+
+  test("clicking event card uses event coordinates and opens fallback facility card", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+
+    await page.waitForFunction(() => Boolean(window.__maplibreMaps?.[0]));
+
+    const eventCard = page.locator("event-feed .event-feed__card");
+    await expect(eventCard).toHaveCount(1);
+    await page.getByRole("button", { name: "Show events" }).click();
+    await eventCard.click();
+
+    const flyToHandle = await page.waitForFunction(() => window.__maplibreMaps?.[0]?.lastFlyTo ?? null);
+    const flyTo = await flyToHandle.jsonValue();
+    expect(flyTo).toMatchObject({
+      center: [-95.36, 29.75],
+      zoom: 9,
+    });
+
+    const dialog = page.locator("facility-card dialog");
+    await expect(dialog).toHaveJSProperty("open", true);
+    await expect(dialog.locator("h2")).toHaveText("Smoke Test Refinery");
+    await expect(dialog).toContainText("Kindrefinery");
+    await expect(dialog).toContainText("OperatorTest Operator");
+    await expect(dialog).toContainText("Status—");
+    await expect(dialog.locator("h3")).toHaveText("Flare event");
+    await expect(dialog).toContainText("Period2020-06-01 – Ongoing");
+  });
+});
+
 test.describe("with flare events", () => {
   test.use({ eventsResponse: sampleEvents, facilitiesResponse: sampleFacilities });
 

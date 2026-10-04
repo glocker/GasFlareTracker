@@ -27,6 +27,10 @@ def test_get_events_shape(client: TestClient) -> None:
             "id",
             "facility_id",
             "facility_name",
+            "facility_kind",
+            "facility_operator",
+            "facility_lon",
+            "facility_lat",
             "kind",
             "start_date",
             "end_date",
@@ -81,6 +85,8 @@ def test_get_events_filters_to_latest_detector_version(monkeypatch) -> None:
     assert "FROM detector_version" in sql
     assert "ORDER BY id DESC" in sql
     assert "JOIN current_detector cd ON cd.id = fe.detector_id" in sql
+    assert "ST_X(f.geom) AS facility_lon" in sql
+    assert "ST_Y(f.geom) AS facility_lat" in sql
     assert params == [None, None, 25]
 
 
