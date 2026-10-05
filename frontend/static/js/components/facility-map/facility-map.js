@@ -183,17 +183,26 @@ export class FacilityMap extends HTMLElement {
       geojson = await fetchFacilities(date, country);
     } catch (err) {
       console.error("failed to load facilities", err);
-      this.mapEmptyView.element.hidden = false;
+      this.mapEmptyView.show("error");
       return;
     }
 
     this.geojson = geojson;
-    this.mapEmptyView.element.hidden = geojson.features.length > 0;
+    if (!geojson.data_ready) {
+      this.mapEmptyView.show("not-ready");
+    } else if (geojson.features.length === 0) {
+      this.mapEmptyView.show("empty");
+    } else {
+      this.mapEmptyView.hide();
+    }
 
     // Sync both period filters to the date actually served, as_of can
-    // differ from what was requested (e.g. when date was omitted)
-    this.periodFilterControl.setValue(geojson.as_of);
-    this.mapEmptyView.periodFilter.setValue(geojson.as_of);
+    // differ from what was requested (e.g. when date was omitted). It can be
+    // null before the pipeline has produced any facility_night rows.
+    if (geojson.as_of !== null) {
+      this.periodFilterControl.setValue(geojson.as_of);
+      this.mapEmptyView.periodFilter.setValue(geojson.as_of);
+    }
 
     const source = /** @type {import("maplibre-gl").GeoJSONSource | undefined} */ (
       this.map.getSource("facilities")

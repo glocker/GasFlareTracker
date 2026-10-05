@@ -1,7 +1,10 @@
 /** @typedef {import("./types.js").FacilityProperties} FacilityProperties */
 /** @typedef {import("./types.js").FlareEvent} FlareEvent */
 /**
- * @typedef {GeoJSON.FeatureCollection<GeoJSON.Point, FacilityProperties> & { as_of: string }} FacilityCollection
+ * @typedef {GeoJSON.FeatureCollection<GeoJSON.Point, FacilityProperties> & { as_of: string | null, data_ready: boolean }} FacilityCollection
+ */
+/**
+ * @typedef {{ data_ready: boolean, events: FlareEvent[] }} EventsResponse
  */
 
 /**
@@ -20,7 +23,8 @@ async function getData(url) {
  * facility, sourced from `facility_status`. Each feature's `properties` must
  * include at least: id, name, kind, operator, status. `as_of` is the date the
  * statuses were actually computed for - current_date echoed back, or the
- * backend's own default when omitted.
+ * backend's own default when omitted. `data_ready=false` means the processing
+ * pipeline has not produced facility_night data yet.
  * @param {string | undefined} currentDate - selected date in date input
  * @param {string | undefined} [country] - selected region filter, ISO 3166-1 alpha-2 country code
  * @returns {Promise<FacilityCollection>}
@@ -43,7 +47,7 @@ export function fetchFacilities(currentDate, country) {
  * @param {string | undefined} [dateFrom] - inclusive lower bound on start_date
  * @param {string | undefined} [dateTo] - inclusive upper bound on start_date
  * @param {number | undefined} [limit] - maximum number of events to fetch
- * @returns {Promise<{ events: FlareEvent[] }>}
+ * @returns {Promise<EventsResponse>}
  */
 export function fetchEvents(dateFrom, dateTo, limit) {
   const url = new URLSearchParams();
@@ -58,5 +62,5 @@ export function fetchEvents(dateFrom, dateTo, limit) {
     url.set('limit', String(limit));
   }
 
-  return /** @type {Promise<{ events: FlareEvent[] }>} */ (getData(`/api/events?${url}`));
+  return /** @type {Promise<EventsResponse>} */ (getData(`/api/events?${url}`));
 }

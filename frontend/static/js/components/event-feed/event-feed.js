@@ -8,6 +8,14 @@ const KIND_LABELS = {
   regime_down: "Regime down",
 };
 
+const STATE_MESSAGES = {
+  empty: "No events found in selected period",
+  error: "Could not load flare events. Try again later.",
+  "not-ready": "Flare events have not been processed yet.",
+};
+
+/** @typedef {keyof typeof STATE_MESSAGES} EventFeedState */
+
 // Light DOM, same reasoning as facility-card: no third-party markup to wall
 // off, so a shadow root would just be extra ceremony.
 export class EventFeed extends HTMLElement {
@@ -54,7 +62,7 @@ export class EventFeed extends HTMLElement {
 
     this.emptyState = document.createElement("p");
     this.emptyState.className = "event-feed__empty";
-    this.emptyState.textContent = "No events found in selected period";
+    this.emptyState.textContent = STATE_MESSAGES.empty;
     this.emptyState.hidden = true;
 
     this.panel.append(close, title, this.list, this.emptyState);
@@ -66,18 +74,36 @@ export class EventFeed extends HTMLElement {
   }
 
   async loadEvents() {
-    /** @type {FlareEvent[]} */
-    let events;
     try {
-      ({ events } = await fetchEvents());
+      const response = await fetchEvents();
+      if (!response.data_ready) {
+        this.showState("not-ready");
+        return;
+      }
+
+      const events = response.events;
+      this.list.replaceChildren(...events.map((event) => this.renderCard(event)));
+      if (events.length === 0) {
+        this.showState("empty");
+      } else {
+        this.list.hidden = false;
+        this.emptyState.hidden = true;
+      }
     } catch (err) {
       console.error("failed to load events", err);
-      return;
+      this.showState("error");
     }
+  }
 
-    this.list.replaceChildren(...events.map((event) => this.renderCard(event)));
-    this.list.hidden = events.length === 0;
-    this.emptyState.hidden = events.length > 0;
+  /**
+   * Shows non-list state inside event feed
+   * @param {EventFeedState} state - state to display
+   */
+  showState(state) {
+    this.list.replaceChildren();
+    this.list.hidden = true;
+    this.emptyState.textContent = STATE_MESSAGES[state];
+    this.emptyState.hidden = false;
   }
 
   /**

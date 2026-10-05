@@ -3,12 +3,14 @@ const { test: base, expect } = require("@playwright/test");
 const emptyFacilities = {
   type: "FeatureCollection",
   as_of: "2020-12-31",
+  data_ready: true,
   features: [],
 };
 
-const emptyEvents = { events: [] };
+const emptyEvents = { data_ready: true, events: [] };
 
 const sampleEvents = {
+  data_ready: true,
   events: [
     {
       id: 201,
@@ -32,6 +34,7 @@ const sampleEvents = {
 const sampleFacilities = {
   type: "FeatureCollection",
   as_of: "2020-12-31",
+  data_ready: true,
   features: [
     {
       type: "Feature",

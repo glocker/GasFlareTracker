@@ -19,6 +19,7 @@ def test_get_events_shape(client: TestClient) -> None:
     assert resp.status_code == 200
     body = resp.json()
     assert "events" in body
+    assert body["data_ready"] is True
     assert len(body["events"]) <= 5
 
     if body["events"]:
@@ -62,6 +63,8 @@ class FakeConnection:
 
     def execute(self, query, params=None):
         self.calls.append((str(query), params))
+        if "EXISTS (SELECT 1 FROM facility_night)" in str(query):
+            return FakeResult([(True,)])
         return FakeResult([({"events": []},)])
 
 
@@ -79,8 +82,8 @@ def test_get_events_filters_to_latest_detector_version(monkeypatch) -> None:
 
     body = main.get_events(limit=25)
 
-    assert body == {"events": []}
-    sql, params = conn.calls[0]
+    assert body == {"data_ready": True, "events": []}
+    sql, params = conn.calls[1]
     assert "WITH current_detector AS" in sql
     assert "FROM detector_version" in sql
     assert "ORDER BY id DESC" in sql

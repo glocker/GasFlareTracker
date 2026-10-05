@@ -1,12 +1,26 @@
 import { PeriodFilter } from "#app/components/period-filter/period-filter.js";
 import { RegionFilter } from "#app/components/region-filter/region-filter.js";
 
+const STATE_MESSAGES = {
+  empty: "Oops, no data in chosen period or region. Pick another one.",
+  error: "Could not load facility data. Try again later.",
+  "not-ready": "Facility data has not been processed yet.",
+};
+
+/** @typedef {keyof typeof STATE_MESSAGES} MapEmptyViewState */
+
 /**
- * Empty view for facility map
+ * Status overlay for facility map
  */
 export class MapEmptyView {
   /** @type {HTMLElement} */
   element;
+
+  /** @type {HTMLParagraphElement} */
+  message;
+
+  /** @type {HTMLDivElement} */
+  filters;
 
   /** @type {PeriodFilter} */
   periodFilter;
@@ -22,17 +36,17 @@ export class MapEmptyView {
     this.periodFilter = new PeriodFilter(onPeriodChange);
     this.regionFilter = new RegionFilter(onRegionChange);
 
-    const message = document.createElement("p");
-    message.className = "map-empty-view__message";
-    message.textContent = "Oops, no data in chosen period or region. Pick another one.";
+    this.message = document.createElement("p");
+    this.message.className = "map-empty-view__message";
+    this.message.textContent = STATE_MESSAGES.empty;
 
-    const filters = document.createElement("div");
-    filters.className = "map-empty-view__filters";
-    filters.append(this.periodFilter.input, this.regionFilter.select);
+    this.filters = document.createElement("div");
+    this.filters.className = "map-empty-view__filters";
+    this.filters.append(this.periodFilter.input, this.regionFilter.select);
 
     const panel = document.createElement("div");
     panel.className = "map-empty-view__panel";
-    panel.append(message, filters);
+    panel.append(this.message, this.filters);
 
     this.element = document.createElement("div");
     this.element.className = "map-empty-view";
@@ -40,5 +54,22 @@ export class MapEmptyView {
     // logic in here
     this.element.hidden = true;
     this.element.append(panel);
+  }
+
+  /**
+   * Shows overlay in requested state
+   * @param {MapEmptyViewState} state - UI state to display
+   */
+  show(state) {
+    this.message.textContent = STATE_MESSAGES[state];
+    this.filters.hidden = state !== "empty";
+    this.element.hidden = false;
+  }
+
+  /**
+   * Hides overlay
+   */
+  hide() {
+    this.element.hidden = true;
   }
 }

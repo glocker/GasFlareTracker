@@ -17,6 +17,7 @@ def test_get_facilities_shape(client: TestClient) -> None:
     body = resp.json()
     assert body["type"] == "FeatureCollection"
     assert "as_of" in body
+    assert body["data_ready"] is True
 
     if body["features"]:
         feature = body["features"][0]
@@ -28,12 +29,16 @@ def test_get_facilities_shape(client: TestClient) -> None:
 def test_get_facilities_filtered_by_country(client: TestClient) -> None:
     resp = client.get("/api/facilities", params={"country": "US"})
     assert resp.status_code == 200
-    assert len(resp.json()["features"]) > 0
+    body = resp.json()
+    assert body["data_ready"] is True
+    assert len(body["features"]) > 0
 
     # v0.1 data is US-only, so any other country is a legitimate empty result
     resp = client.get("/api/facilities", params={"country": "FR"})
     assert resp.status_code == 200
-    assert resp.json()["features"] == []
+    body = resp.json()
+    assert body["data_ready"] is True
+    assert body["features"] == []
 
 
 def test_get_facilities_rejects_malformed_country(client: TestClient) -> None:
@@ -49,4 +54,5 @@ def test_get_facilities_outside_loaded_period_is_empty(client: TestClient) -> No
     assert resp.status_code == 200
     body = resp.json()
     assert body["as_of"] == "2027-01-01"
+    assert body["data_ready"] is True
     assert body["features"] == []

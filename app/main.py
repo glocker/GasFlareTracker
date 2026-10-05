@@ -69,14 +69,27 @@ def get_facilities(
             raise RuntimeError("facility_night period query did not return a row")
         loaded_from, loaded_to = loaded_period
 
+        if loaded_from is None or loaded_to is None:
+            return {
+                "type": "FeatureCollection",
+                "as_of": current_date,
+                "data_ready": False,
+                "features": [],
+            }
+
         if current_date is None:
             # no date given, use latest night we've got
             current_date = loaded_to
 
-        # facility_status_asof() always returns every facility
-        # no data - show empty view
-        if loaded_from is None or not (loaded_from <= current_date <= loaded_to):
-            return {"type": "FeatureCollection", "as_of": current_date, "features": []}
+        # facility_status_asof() always returns every facility. Outside the
+        # loaded period is a real empty result, not a pipeline-not-ready state.
+        if not (loaded_from <= current_date <= loaded_to):
+            return {
+                "type": "FeatureCollection",
+                "as_of": current_date,
+                "data_ready": True,
+                "features": [],
+            }
 
         cur = conn.execute(query, [current_date, current_date, country])
 
@@ -86,7 +99,9 @@ def get_facilities(
         raise RuntimeError("facility query did not return a GeoJSON collection")
 
     # psycopg parses the JSON column on its own
-    return result[0]
+    geojson = result[0]
+    geojson["data_ready"] = True
+    return geojson
 
 
 @app.get("/api/events")
@@ -135,13 +150,26 @@ def get_events(
         """
 
     with pool.connection() as conn:
+        data_ready = conn.execute(
+            """
+            SELECT EXISTS (SELECT 1 FROM facility_night)
+               AND EXISTS (SELECT 1 FROM detector_version)
+            """
+        ).fetchone()
+        if data_ready is None:
+            raise RuntimeError("event readiness query did not return a row")
+        if not data_ready[0]:
+            return {"data_ready": False, "events": []}
+
         cur = conn.execute(query, [date_from, date_to, limit])
         result = cur.fetchone()
 
     if result is None:
         raise RuntimeError("event query did not return an events collection")
 
-    return result[0]
+    events = result[0]
+    events["data_ready"] = True
+    return events
 
 
 # Start page.

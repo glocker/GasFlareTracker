@@ -38,3 +38,7 @@
   display: flex;
   gap: 0.5rem;
 }
+
+.map-empty-view__filters[hidden] {
+  display: none;
+}
