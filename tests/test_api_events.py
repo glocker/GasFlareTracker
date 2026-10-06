@@ -52,8 +52,9 @@ class FakeResult:
 
 
 class FakeConnection:
-    def __init__(self):
+    def __init__(self, data_ready=True):
         self.calls = []
+        self.data_ready = data_ready
 
     def __enter__(self):
         return self
@@ -64,7 +65,7 @@ class FakeConnection:
     def execute(self, query, params=None):
         self.calls.append((str(query), params))
         if "EXISTS (SELECT 1 FROM facility_night)" in str(query):
-            return FakeResult([(True,)])
+            return FakeResult([(self.data_ready,)])
         return FakeResult([({"events": []},)])
 
 
@@ -91,6 +92,16 @@ def test_get_events_filters_to_latest_detector_version(monkeypatch) -> None:
     assert "ST_X(f.geom) AS facility_lon" in sql
     assert "ST_Y(f.geom) AS facility_lat" in sql
     assert params == [None, None, 25]
+
+
+def test_get_events_returns_not_ready_before_pipeline(monkeypatch) -> None:
+    conn = FakeConnection(data_ready=False)
+    monkeypatch.setattr(main, "pool", FakePool(conn))
+
+    body = main.get_events(limit=25)
+
+    assert body == {"data_ready": False, "events": []}
+    assert len(conn.calls) == 1
 
 
 def test_get_events_rejects_invalid_limit(client: TestClient) -> None:

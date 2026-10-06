@@ -72,7 +72,7 @@ def get_facilities(
         if loaded_from is None or loaded_to is None:
             return {
                 "type": "FeatureCollection",
-                "as_of": current_date,
+                "as_of": None,
                 "data_ready": False,
                 "features": [],
             }

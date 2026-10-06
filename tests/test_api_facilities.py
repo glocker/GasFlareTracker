@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+import app.main as main
 from app.main import app
 
 
@@ -39,6 +40,52 @@ def test_get_facilities_filtered_by_country(client: TestClient) -> None:
     body = resp.json()
     assert body["data_ready"] is True
     assert body["features"] == []
+
+
+class FakeResult:
+    def __init__(self, rows):
+        self.rows = rows
+
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+
+class FakeConnection:
+    def __init__(self):
+        self.calls = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, traceback):
+        return False
+
+    def execute(self, query, params=None):
+        self.calls.append((str(query), params))
+        return FakeResult([((None, None))])
+
+
+class FakePool:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def connection(self):
+        return self.conn
+
+
+def test_get_facilities_returns_not_ready_before_pipeline(monkeypatch) -> None:
+    conn = FakeConnection()
+    monkeypatch.setattr(main, "pool", FakePool(conn))
+
+    body = main.get_facilities()
+
+    assert body == {
+        "type": "FeatureCollection",
+        "as_of": None,
+        "data_ready": False,
+        "features": [],
+    }
+    assert len(conn.calls) == 1
 
 
 def test_get_facilities_rejects_malformed_country(client: TestClient) -> None:
