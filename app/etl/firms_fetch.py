@@ -1,5 +1,6 @@
 import csv
 import io
+import json
 import time
 from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
@@ -24,6 +25,23 @@ CSV_HEADER = "latitude,longitude"  # real header always starts with this; an
 # without needing to track a rolling counter.
 REQUEST_DELAY_S = 0.35
 MAX_ATTEMPTS = 3
+
+
+def _json_default(value):
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
+
+
+def _log_event(event: str, **fields) -> None:
+    print(
+        json.dumps(
+            {"event": event, "command": "fetch-firms", **fields},
+            default=_json_default,
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
 
 
 @dataclass
@@ -209,20 +227,28 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
                                     (region.id, source, start, day_to, len(rows), error[:500]),
                                 )
 
+                    window_context = {
+                        "done": done,
+                        "total_windows": total_windows,
+                        "region_id": region.id,
+                        "region_name": region.name,
+                        "source": source,
+                        "date_from": start,
+                        "date_to": day_to,
+                    }
                     if error:
                         stats["errors"] += 1
-                        print(
-                            f"[{done}/{total_windows}] {region.name} {source} {start}: "
-                            f"ERROR {error[:200]}"
+                        _log_event(
+                            "fetch_window_failure",
+                            **window_context,
+                            rows=len(rows),
+                            error=error[:500],
                         )
                     else:
                         stats["rows"] += len(rows)
                         stats["windows"] += 1
                         if done % 20 == 0 or len(rows) > 0:
-                            print(
-                                f"[{done}/{total_windows}] {region.name} {source} "
-                                f"{start}..{day_to}: {len(rows)} rows"
-                            )
+                            _log_event("fetch_window_success", **window_context, rows=len(rows))
 
                     time.sleep(REQUEST_DELAY_S)
 

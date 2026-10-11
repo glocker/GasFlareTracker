@@ -13,6 +13,42 @@ from app.etl import (
 )
 
 
+def _json_default(value):
+    if isinstance(value, date):
+        return value.isoformat()
+    return str(value)
+
+
+def log_event(event: str, command: str, **fields) -> None:
+    print(
+        json.dumps(
+            {"event": event, "command": command, **fields},
+            default=_json_default,
+            ensure_ascii=False,
+        ),
+        flush=True,
+    )
+
+
+def _command_context(args: argparse.Namespace) -> dict:
+    fields = {}
+    for name in (
+        "date_from",
+        "date_to",
+        "sources",
+        "xlsx_path",
+        "clusters",
+        "force_rematch",
+        "concurrently",
+        "detector_id",
+        "cluster_distance_m",
+        "limit",
+    ):
+        if hasattr(args, name):
+            fields[name] = getattr(args, name)
+    return fields
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="gasflaretracker")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -79,18 +115,27 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Opened once here, not inside each command: the etl functions can be
-    # chained in one process this way without a closed-pool reopen crash.
-    pool.open()
+    context = _command_context(args)
+    log_event("start", args.command, **context)
+
+    pool_opened = False
     try:
+        # Opened once here, not inside each command: etl functions can be
+        # chained in one process this way without a closed-pool reopen crash
+        pool.open()
+        pool_opened = True
         if args.command == "load-facilities":
-            print(f"inserted {eia_facilities.load(args.xlsx_path)} facilities")
+            inserted = eia_facilities.load(args.xlsx_path)
+            log_event("success", args.command, **context, inserted_facilities=inserted)
         elif args.command == "build-fetch-regions":
-            print(f"inserted {fetch_regions.run(args.clusters)} fetch_region rows")
+            inserted = fetch_regions.run(args.clusters)
+            log_event("success", args.command, **context, inserted_fetch_regions=inserted)
         elif args.command == "bootstrap-detector":
-            print(f"inserted detector_version id={detector_bootstrap.run()}")
+            detector_id = detector_bootstrap.run()
+            log_event("success", args.command, **context, detector_id=detector_id)
         elif args.command == "fetch-firms":
-            print(firms_fetch.run(args.date_from, args.date_to, args.sources))
+            stats = firms_fetch.run(args.date_from, args.date_to, args.sources)
+            log_event("success", args.command, **context, **stats)
         elif args.command == "match-detections":
             with pool.connection() as conn:
                 row = conn.execute(
@@ -98,19 +143,36 @@ def main() -> None:
                     (args.date_from, args.date_to, args.force_rematch),
                 ).fetchone()
                 conn.commit()
-            print(f"matched {row[0]} detection rows")
+            matched_rows = row[0]
+            log_event("success", args.command, **context, matched_rows=matched_rows)
         elif args.command == "rebuild-facility-nights":
             with pool.connection() as conn:
                 conn.execute(
                     "SELECT rebuild_facility_nights(%s, %s)", (args.date_from, args.date_to)
                 )
+                rebuilt_rows = conn.execute(
+                    """
+                    SELECT count(*)
+                      FROM facility_night
+                     WHERE night_date >= %s
+                       AND night_date <  %s
+                    """,
+                    (args.date_from, args.date_to),
+                ).fetchone()[0]
                 conn.commit()
-            print(f"rebuilt facility_night rows from {args.date_from} to {args.date_to}")
+            log_event("success", args.command, **context, rebuilt_rows=rebuilt_rows)
         elif args.command == "coordinate-qa":
             report = coordinate_qa.run(
                 args.date_from, args.date_to, args.cluster_distance_m, args.limit
             )
-            print(json.dumps(report, indent=2, ensure_ascii=False))
+            log_event(
+                "success",
+                args.command,
+                **context,
+                no_detection_facilities=len(report["no_detection_facilities"]),
+                close_clusters=len(report["close_clusters"]),
+                report=report,
+            )
         elif args.command == "refresh-status":
             statement = "REFRESH MATERIALIZED VIEW facility_status"
             if args.concurrently:
@@ -124,12 +186,16 @@ def main() -> None:
                         conn.commit()
                 finally:
                     conn.autocommit = old_autocommit
-            print("refreshed facility_status")
+            log_event("success", args.command, **context, refreshed_view="facility_status")
         elif args.command == "detect-events":
             n = event_detector.run(args.date_from, args.date_to, args.detector_id)
-            print(f"inserted/updated {n} flare_event rows")
+            log_event("success", args.command, **context, upserted_events=n)
+    except Exception as exc:
+        log_event("failure", args.command, **context, error=type(exc).__name__, message=str(exc))
+        raise
     finally:
-        pool.close()
+        if pool_opened:
+            pool.close()
 
 
 if __name__ == "__main__":
