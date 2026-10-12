@@ -125,7 +125,7 @@ async function installDefaultRoutes(page, facilitiesResponse = emptyFacilities, 
   await page.route("**/*", async (route) => {
     const requestUrl = new URL(route.request().url());
 
-    if (requestUrl.href === "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js") {
+    if (requestUrl.origin === "http://127.0.0.1:4173" && requestUrl.pathname === "/vendor/maplibre-gl/maplibre-gl.js") {
       await route.fulfill({
         status: 200,
         contentType: "application/javascript",
@@ -134,7 +134,7 @@ async function installDefaultRoutes(page, facilitiesResponse = emptyFacilities, 
       return;
     }
 
-    if (requestUrl.href === "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css") {
+    if (requestUrl.origin === "http://127.0.0.1:4173" && requestUrl.pathname === "/vendor/maplibre-gl/maplibre-gl.css") {
       await route.fulfill({
         status: 200,
         contentType: "text/css",

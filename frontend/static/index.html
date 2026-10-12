@@ -20,8 +20,8 @@
     { "imports": { "#app/": "/js/" } }
   </script>
 
-  <!-- UMD build: exposes the global `maplibregl`, loaded before our module -->
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <!-- Vendored UMD build: exposes the global `maplibregl`, loaded before our module -->
+  <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
   <script type="module" src="js/app.js"></script>
 </body>
 </html>
