@@ -14,6 +14,10 @@ GasFlareTracker detects refinery flare-regime changes from VIIRS/FIRMS thermal d
 
 This is accepted for v0.1 as a release limitation because no 2020/2021 EIA Refinery Capacity Report file is currently checked into the repository. Before making stronger historical claims, replace `data/refcap26.xlsx` with a period-matched 2020/2021 registry or document the mismatch in the public release notes.
 
+## Browser support
+
+v0.1 is tested and supported on the latest stable Chrome and Chromium releases. Safari and Firefox are best-effort only and are not part of the v0.1 release test matrix.
+
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
