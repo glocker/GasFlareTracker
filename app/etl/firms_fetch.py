@@ -153,12 +153,32 @@ def _already_fetched(conn, region_id: int, source: str, day_from: date, day_to: 
     )
 
 
+def _validate_request(p_from: date, p_to: date, sources: list[str]) -> None:
+    if not FIRMS_MAP_KEY.strip():
+        raise RuntimeError("FIRMS_MAP_KEY is required for fetch-firms")
+    if p_from >= p_to:
+        raise ValueError("fetch-firms requires --from before the exclusive --to date")
+    if not sources:
+        raise ValueError("fetch-firms requires at least one source")
+
+
+def _ensure_complete(stats: dict) -> None:
+    if stats["errors"]:
+        raise RuntimeError(
+            f"FIRMS fetch incomplete: {stats['errors']} window(s) failed; "
+            "rerun fetch-firms before downstream processing"
+        )
+
+
 def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
     sources = sources or DEFAULT_SOURCES
+    _validate_request(p_from, p_to, sources)
     stats = {"windows": 0, "rows": 0, "errors": 0, "skipped": 0}
 
     with pool.connection() as conn:
         regions = _regions(conn)
+    if not regions:
+        raise RuntimeError("No active fetch regions found; run build-fetch-regions first")
 
     total_windows = len(regions) * len(sources) * len(list(_date_windows(p_from, p_to)))
     done = 0
@@ -252,6 +272,7 @@ def run(p_from: date, p_to: date, sources: list[str] | None = None) -> dict:
 
                     time.sleep(REQUEST_DELAY_S)
 
+    _ensure_complete(stats)
     return stats
 
 
